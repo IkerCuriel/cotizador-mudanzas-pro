@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Cotizador profesional de mudanzas con cálculo estimado, inventario y servicios adicionales."
+    />
+    <meta name="theme-color" content="#101828" />
+    <title>MoveFlow | Cotizador de mudanzas</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="#" aria-label="MoveFlow, inicio">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" role="img">
+              <path d="M8 14.5 20 7l12 7.5v14L20 36 8 28.5v-14Z" />
+              <path d="m13.5 18 6.5 4 6.5-4M20 22v8" />
+            </svg>
+          </span>
+          <span>
+            <strong>MoveFlow</strong>
+            <small>Cotización inteligente</small>
+          </span>
+        </a>
+
+        <div class="header-support">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>Asesoría personalizada</span>
+          <a href="tel:+525500000000">55 0000 0000</a>
+        </div>
+      </header>
+
+      <main class="main-layout">
+        <section class="hero-panel" aria-labelledby="hero-title">
+          <span class="eyebrow">Mudarte puede ser más simple</span>
+          <h1 id="hero-title">Calcula tu mudanza en pocos minutos.</h1>
+          <p>
+            Ingresa tu ruta, inventario y servicios. Obtendrás un rango estimado
+            para planear tu presupuesto antes de hablar con un asesor.
+          </p>
+
+          <div class="hero-points" aria-label="Beneficios">
+            <article>
+              <span class="point-icon" aria-hidden="true">01</span>
+              <div>
+                <strong>Estimación inmediata</strong>
+                <small>Precio actualizado mientras completas los datos.</small>
+              </div>
+            </article>
+            <article>
+              <span class="point-icon" aria-hidden="true">02</span>
+              <div>
+                <strong>Inventario flexible</strong>
+                <small>Agrega muebles, cajas y artículos especiales.</small>
+              </div>
+            </article>
+            <article>
+              <span class="point-icon" aria-hidden="true">03</span>
+              <div>
+                <strong>Sin compromiso</strong>
+                <small>Guarda, imprime o comparte la estimación.</small>
+              </div>
+            </article>
+          </div>
+
+          <div class="trust-card">
+            <div class="avatar-stack" aria-hidden="true">
+              <span>MF</span><span>+1</span><span>✓</span>
+            </div>
+            <div>
+              <strong>Atención humana al finalizar</strong>
+              <p>Validamos accesos, volumen y condiciones antes de confirmar.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="quote-card" aria-labelledby="quote-title">
+          <div class="quote-card__header">
+            <div>
+              <span class="eyebrow eyebrow--dark">Cotizador</span>
+              <h2 id="quote-title">Cuéntanos sobre tu mudanza</h2>
+            </div>
+            <button class="text-button" id="resetQuote" type="button">Reiniciar</button>
+          </div>
+
+          <nav class="stepper" aria-label="Progreso de la cotización">
+            <button class="stepper__item is-active" type="button" data-go-step="1" aria-current="step">
+              <span>1</span><small>Ruta</small>
+            </button>
+            <span class="stepper__line"></span>
+            <button class="stepper__item" type="button" data-go-step="2">
+              <span>2</span><small>Inventario</small>
+            </button>
+            <span class="stepper__line"></span>
+            <button class="stepper__item" type="button" data-go-step="3">
+              <span>3</span><small>Servicios</small>
+            </button>
+            <span class="stepper__line"></span>
+            <button class="stepper__item" type="button" data-go-step="4">
+              <span>4</span><small>Datos</small>
+            </button>
+          </nav>
+
+          <form id="movingQuoteForm" novalidate>
+            <section class="form-step is-active" data-step="1" aria-labelledby="step-1-title">
+              <div class="section-heading">
+                <span>Paso 1 de 4</span>
+                <h3 id="step-1-title">¿De dónde sales y a dónde vas?</h3>
+                <p>La distancia y los accesos influyen en el costo operativo.</p>
+              </div>
+
+              <div class="form-grid">
+                <label class="field field--full">
+                  <span>Dirección de origen *</span>
+                  <span class="input-shell">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.6 7-12A7 7 0 1 0 5 9c0 6.4 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                    <input id="origin" name="origin" type="text" placeholder="Colonia, alcaldía o dirección" autocomplete="street-address" required />
+                  </span>
+                  <small class="field-error" data-error-for="origin"></small>
+                </label>
+
+                <label class="field field--full">
+                  <span>Dirección de destino *</span>
+                  <span class="input-shell">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.6 7-12A7 7 0 1 0 5 9c0 6.4 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                    <input id="destination" name="destination" type="text" placeholder="Colonia, alcaldía o dirección" autocomplete="street-address" required />
+                  </span>
+                  <small class="field-error" data-error-for="destination"></small>
+                </label>
+
+                <label class="field">
+                  <span>Distancia aproximada *</span>
+                  <span class="input-shell input-shell--suffix">
+                    <input id="distanceKm" name="distanceKm" type="number" min="1" max="2000" step="1" value="10" required />
+                    <b>km</b>
+                  </span>
+                  <small class="field-hint">Después se puede automatizar con Google Maps.</small>
+                  <small class="field-error" data-error-for="distanceKm"></small>
+                </label>
+
+                <label class="field">
+                  <span>Fecha estimada *</span>
+                  <span class="input-shell">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+                    <input id="moveDate" name="moveDate" type="date" required />
+                  </span>
+                  <small class="field-error" data-error-for="moveDate"></small>
+                </label>
+
+                <label class="field">
+                  <span>Tipo de inmueble en origen</span>
+                  <select id="originProperty" name="originProperty">
+                    <option value="house">Casa</option>
+                    <option value="apartment">Departamento</option>
+                    <option value="office">Oficina</option>
+                    <option value="storage">Bodega / almacén</option>
+                  </select>
+                </label>
+
+                <label class="field">
+                  <span>Tipo de inmueble en destino</span>
+                  <select id="destinationProperty" name="destinationProperty">
+                    <option value="house">Casa</option>
+                    <option value="apartment">Departamento</option>
+                    <option value="office">Oficina</option>
+                    <option value="storage">Bodega / almacén</option>
+                  </select>
+                </label>
+
+                <div class="access-card">
+                  <div class="access-card__head">
+                    <div>
+                      <strong>Acceso en origen</strong>
+                      <small>Selecciona el piso y si hay elevador.</small>
+                    </div>
+                    <span class="mini-badge">Origen</span>
+                  </div>
+                  <div class="access-card__controls">
+                    <label class="compact-field">
+                      <span>Piso</span>
+                      <input id="originFloor" name="originFloor" type="number" min="0" max="30" value="0" />
+                    </label>
+                    <label class="toggle-field">
+                      <input id="originElevator" name="originElevator" type="checkbox" />
+                      <span class="toggle" aria-hidden="true"></span>
+                      <span>Hay elevador</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="access-card">
+                  <div class="access-card__head">
+                    <div>
+                      <strong>Acceso en destino</strong>
+                      <small>Selecciona el piso y si hay elevador.</small>
+                    </div>
+                    <span class="mini-badge">Destino</span>
+                  </div>
+                  <div class="access-card__controls">
+                    <label class="compact-field">
+                      <span>Piso</span>
+                      <input id="destinationFloor" name="destinationFloor" type="number" min="0" max="30" value="0" />
+                    </label>
+                    <label class="toggle-field">
+                      <input id="destinationElevator" name="destinationElevator" type="checkbox" />
+                      <span class="toggle" aria-hidden="true"></span>
+                      <span>Hay elevador</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="form-step" data-step="2" aria-labelledby="step-2-title">
+              <div class="section-heading">
+                <span>Paso 2 de 4</span>
+                <h3 id="step-2-title">¿Qué vas a transportar?</h3>
+                <p>Elige un tamaño rápido y luego ajusta cada artículo.</p>
+              </div>
+
+              <div class="preset-grid" role="group" aria-label="Tamaños predefinidos de mudanza">
+                <button class="preset-card" type="button" data-preset="mini">
+                  <span class="preset-card__icon">◫</span>
+                  <strong>Mini mudanza</strong>
+                  <small>Habitación o pocos muebles</small>
+                </button>
+                <button class="preset-card" type="button" data-preset="oneBedroom">
+                  <span class="preset-card__icon">⌂</span>
+                  <strong>1 recámara</strong>
+                  <small>Departamento pequeño</small>
+                </button>
+                <button class="preset-card" type="button" data-preset="twoBedroom">
+                  <span class="preset-card__icon">▦</span>
+                  <strong>2 recámaras</strong>
+                  <small>Hogar mediano</small>
+                </button>
+                <button class="preset-card" type="button" data-preset="family">
+                  <span class="preset-card__icon">▤</span>
+                  <strong>Casa familiar</strong>
+                  <small>3+ recámaras</small>
+                </button>
+              </div>
+
+              <div class="inventory-toolbar">
+                <div>
+                  <strong>Inventario</strong>
+                  <span id="itemCountLabel">0 artículos seleccionados</span>
+                </div>
+                <button class="text-button" id="clearInventory" type="button">Limpiar inventario</button>
+              </div>
+
+              <div class="inventory-grid" id="inventoryGrid"></div>
+
+              <label class="field field--full custom-item-field">
+                <span>Otros artículos o consideraciones</span>
+                <textarea id="customItems" name="customItems" rows="3" placeholder="Ej. piano vertical, caja fuerte, macetas grandes, cristal delicado..."></textarea>
+              </label>
+            </section>
+
+            <section class="form-step" data-step="3" aria-labelledby="step-3-title">
+              <div class="section-heading">
+                <span>Paso 3 de 4</span>
+                <h3 id="step-3-title">Personaliza el servicio</h3>
+                <p>Agrega protección, maniobras y apoyo profesional.</p>
+              </div>
+
+              <div class="service-grid">
+                <label class="service-card">
+                  <input type="checkbox" name="service" value="packing" />
+                  <span class="service-card__check">✓</span>
+                  <span class="service-card__icon">▣</span>
+                  <strong>Empaque profesional</strong>
+                  <small>Materiales y protección para objetos de uso cotidiano.</small>
+                  <b>Desde $650</b>
+                </label>
+                <label class="service-card">
+                  <input type="checkbox" name="service" value="assembly" />
+                  <span class="service-card__check">✓</span>
+                  <span class="service-card__icon">⌘</span>
+                  <strong>Desarmado y armado</strong>
+                  <small>Camas, mesas, escritorios y muebles modulares.</small>
+                  <b>+$550</b>
+                </label>
+                <label class="service-card">
+                  <input type="checkbox" name="service" value="fragile" />
+                  <span class="service-card__check">✓</span>
+                  <span class="service-card__icon">◇</span>
+                  <strong>Manejo de frágiles</strong>
+                  <small>Vajilla, espejos, cristalería y electrónicos sensibles.</small>
+                  <b>+$420</b>
+                </label>
+                <label class="service-card">
+                  <input type="checkbox" name="service" value="insurance" />
+                  <span class="service-card__check">✓</span>
+                  <span class="service-card__icon">◉</span>
+                  <strong>Cobertura ampliada</strong>
+                  <small>Protección adicional sobre el valor operativo estimado.</small>
+                  <b>4% del subtotal</b>
+                </label>
+                <label class="service-card">
+                  <input type="checkbox" name="service" value="longCarry" />
+                  <span class="service-card__check">✓</span>
+                  <span class="service-card__icon">↔</span>
+                  <strong>Acarreo extendido</strong>
+                  <small>Más de 30 metros entre la unidad y el acceso.</small>
+                  <b>+$350</b>
+                </label>
+                <label class="service-card">
+                  <input type="checkbox" name="service" value="express" />
+                  <span class="service-card__check">✓</span>
+                  <span class="service-card__icon">ϟ</span>
+                  <strong>Servicio prioritario</strong>
+                  <small>Ventana de llegada preferente y atención acelerada.</small>
+                  <b>+12%</b>
+                </label>
+              </div>
+
+              <div class="form-grid form-grid--top-space">
+                <label class="field">
+                  <span>Horario preferido</span>
+                  <select id="timeWindow" name="timeWindow">
+                    <option value="morning">Mañana · 08:00 a 12:00</option>
+                    <option value="afternoon">Tarde · 12:00 a 17:00</option>
+                    <option value="evening">Tarde-noche · 17:00 a 20:00</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Nivel de protección</span>
+                  <select id="protectionLevel" name="protectionLevel">
+                    <option value="standard">Estándar</option>
+                    <option value="plus">Protección Plus</option>
+                    <option value="premium">Protección Premium</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="field field--full custom-item-field">
+                <span>Indicaciones para el equipo</span>
+                <textarea id="notes" name="notes" rows="4" placeholder="Restricciones de acceso, estacionamiento, horario del condominio, artículos que requieren cuidado especial..."></textarea>
+              </label>
+            </section>
+
+            <section class="form-step" data-step="4" aria-labelledby="step-4-title">
+              <div class="section-heading">
+                <span>Paso 4 de 4</span>
+                <h3 id="step-4-title">Recibe tu estimación</h3>
+                <p>Estos datos se usarán únicamente para dar seguimiento a la solicitud.</p>
+              </div>
+
+              <div class="form-grid">
+                <label class="field field--full">
+                  <span>Nombre completo *</span>
+                  <input id="customerName" name="customerName" type="text" placeholder="Tu nombre" autocomplete="name" required />
+                  <small class="field-error" data-error-for="customerName"></small>
+                </label>
+                <label class="field">
+                  <span>Teléfono *</span>
+                  <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="55 0000 0000" autocomplete="tel" required />
+                  <small class="field-error" data-error-for="phone"></small>
+                </label>
+                <label class="field">
+                  <span>Correo electrónico</span>
+                  <input id="email" name="email" type="email" placeholder="nombre@correo.com" autocomplete="email" />
+                  <small class="field-error" data-error-for="email"></small>
+                </label>
+              </div>
+
+              <div class="final-estimate" id="finalEstimate">
+                <div class="final-estimate__top">
+                  <span>Estimación preliminar</span>
+                  <strong id="finalRange">$0 — $0 MXN</strong>
+                  <small>Incluye impuestos estimados y costos operativos calculados.</small>
+                </div>
+                <div class="breakdown" id="breakdownList"></div>
+              </div>
+
+              <label class="consent-field">
+                <input id="privacyConsent" name="privacyConsent" type="checkbox" required />
+                <span>Acepto que un asesor me contacte para validar la cotización y confirmar disponibilidad.</span>
+              </label>
+              <small class="field-error" data-error-for="privacyConsent"></small>
+            </section>
+
+            <div class="form-actions">
+              <button class="button button--secondary is-hidden" id="prevStep" type="button">
+                <span aria-hidden="true">←</span> Anterior
+              </button>
+              <div class="form-actions__spacer"></div>
+              <button class="button button--primary" id="nextStep" type="button">
+                Continuar <span aria-hidden="true">→</span>
+              </button>
+              <button class="button button--primary is-hidden" id="submitQuote" type="submit">
+                Generar cotización <span aria-hidden="true">✓</span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="estimate-panel" aria-label="Resumen de la estimación">
+          <div class="estimate-panel__sticky">
+            <div class="estimate-card">
+              <div class="estimate-card__header">
+                <span>Estimación en tiempo real</span>
+                <span class="live-pill"><i></i> En vivo</span>
+              </div>
+              <div class="estimate-price">
+                <small>Desde</small>
+                <strong id="estimateFrom">$1,450</strong>
+                <span>MXN</span>
+              </div>
+              <p id="estimateRangeText">Rango sugerido: $1,450 — $1,750 MXN</p>
+
+              <div class="estimate-meter" aria-label="Nivel de complejidad">
+                <div class="estimate-meter__label">
+                  <span>Complejidad</span>
+                  <strong id="complexityLabel">Básica</strong>
+                </div>
+                <div class="estimate-meter__track"><span id="complexityBar"></span></div>
+              </div>
+
+              <dl class="estimate-summary">
+                <div><dt>Distancia</dt><dd id="summaryDistance">10 km</dd></div>
+                <div><dt>Artículos</dt><dd id="summaryItems">0</dd></div>
+                <div><dt>Volumen estimado</dt><dd id="summaryVolume">0.0 m³</dd></div>
+                <div><dt>Unidad sugerida</dt><dd id="summaryVehicle">Van ligera</dd></div>
+              </dl>
+
+              <div class="estimate-note">
+                <span aria-hidden="true">i</span>
+                <p>El precio final se confirma al validar accesos, volumen real y disponibilidad.</p>
+              </div>
+            </div>
+
+            <div class="security-strip">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-3.8 8-10V5l-8-3-8 3v7c0 6.2 8 10 8 10Z"/><path d="m9 12 2 2 4-5"/></svg>
+              <div><strong>Tus datos están protegidos</strong><small>No compartimos tu información con terceros.</small></div>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="site-footer">
+        <span>© <span id="currentYear"></span> MoveFlow. Cotizador demostrativo.</span>
+        <span>Diseñado para evolucionar a una plataforma comercial completa.</span>
+      </footer>
+    </div>
+
+    <div class="modal-backdrop" id="quoteModal" aria-hidden="true">
+      <section class="success-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button class="modal-close" id="closeModal" type="button" aria-label="Cerrar">×</button>
+        <span class="success-icon" aria-hidden="true">✓</span>
+        <span class="eyebrow eyebrow--dark">Cotización generada</span>
+        <h2 id="modalTitle">¡Tu estimación está lista!</h2>
+        <p>Guarda este resumen o compártelo con un asesor para validar disponibilidad y precio final.</p>
+
+        <div class="modal-price">
+          <span>Rango estimado</span>
+          <strong id="modalRange">$0 — $0 MXN</strong>
+        </div>
+
+        <div class="modal-summary" id="modalSummary"></div>
+
+        <div class="modal-actions">
+          <button class="button button--primary" id="printQuote" type="button">Imprimir / guardar PDF</button>
+          <button class="button button--secondary" id="copyQuote" type="button">Copiar resumen</button>
+        </div>
+        <small class="copy-feedback" id="copyFeedback" role="status"></small>
+      </section>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
