@@ -1,0 +1,12 @@
+{
+  "folders": [{ "path": "." }],
+  "settings": { "files.exclude": { "node_modules": true, "dist": true }, "editor.tabSize": 2 },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      { "label": "MoveFlow: abrir desarrollo", "type": "npm", "script": "dev", "isBackground": true, "problemMatcher": [] },
+      { "label": "MoveFlow: verificar proyecto", "type": "npm", "script": "test", "group": "test", "problemMatcher": [] },
+      { "label": "MoveFlow: preparar publicación", "type": "npm", "script": "build", "group": "build", "problemMatcher": [] }
+    ]
+  }
+}

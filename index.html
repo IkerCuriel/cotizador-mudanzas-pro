@@ -3,475 +3,163 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Cotizador profesional de mudanzas con cálculo estimado, inventario y servicios adicionales."
-    />
-    <meta name="theme-color" content="#101828" />
-    <title>MoveFlow | Cotizador de mudanzas</title>
+    <meta name="description" content="Prepara los detalles de tu mudanza y compártelos con el equipo. Acuerda el servicio y el precio con una persona." />
+    <meta name="theme-color" content="#142536" />
+    <title>MoveFlow | Tu mudanza empieza con una conversación</title>
     <link rel="stylesheet" href="./src/styles.css" />
   </head>
   <body>
+    <a class="skip-link" href="#quote-title">Ir a mi solicitud</a>
     <div class="page-shell">
       <header class="site-header">
         <a class="brand" href="#" aria-label="MoveFlow, inicio">
-          <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 40 40" role="img">
-              <path d="M8 14.5 20 7l12 7.5v14L20 36 8 28.5v-14Z" />
-              <path d="m13.5 18 6.5 4 6.5-4M20 22v8" />
-            </svg>
-          </span>
-          <span>
-            <strong>MoveFlow</strong>
-            <small>Cotización inteligente</small>
-          </span>
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M8 14.5 20 7l12 7.5v14L20 36 8 28.5v-14Z"/><path d="m8 14.5 12 7 12-7M20 21.5V36M14 11l12 7v7"/></svg></span>
+          <span><strong>MoveFlow</strong><small>Mudanzas, de persona a persona</small></span>
         </a>
-
-        <div class="header-support">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span>Asesoría personalizada</span>
-          <a href="tel:+525500000000">55 0000 0000</a>
-        </div>
+        <nav class="header-support" aria-label="Navegación principal">
+          <a href="#how-it-works">Cómo funciona</a>
+          <a href="#para-mudanceros">Soy mudancero</a><a class="pilot-link" href="./cuenta.html">Mi cuenta <span aria-hidden="true">↗</span></a>
+        </nav>
       </header>
 
-      <main class="main-layout">
+      <main>
         <section class="hero-panel" aria-labelledby="hero-title">
-          <span class="eyebrow">Mudarte puede ser más simple</span>
-          <h1 id="hero-title">Calcula tu mudanza en pocos minutos.</h1>
-          <p>
-            Ingresa tu ruta, inventario y servicios. Obtendrás un rango estimado
-            para planear tu presupuesto antes de hablar con un asesor.
-          </p>
-
-          <div class="hero-points" aria-label="Beneficios">
-            <article>
-              <span class="point-icon" aria-hidden="true">01</span>
-              <div>
-                <strong>Estimación inmediata</strong>
-                <small>Precio actualizado mientras completas los datos.</small>
-              </div>
-            </article>
-            <article>
-              <span class="point-icon" aria-hidden="true">02</span>
-              <div>
-                <strong>Inventario flexible</strong>
-                <small>Agrega muebles, cajas y artículos especiales.</small>
-              </div>
-            </article>
-            <article>
-              <span class="point-icon" aria-hidden="true">03</span>
-              <div>
-                <strong>Sin compromiso</strong>
-                <small>Guarda, imprime o comparte la estimación.</small>
-              </div>
-            </article>
+          <div class="hero-copy">
+            <span class="eyebrow"><span aria-hidden="true" class="status-dot"></span>Un nuevo comienzo, bien planeado</span>
+            <h1 id="hero-title">Tu próxima mudanza.<br /><em>El trato, contigo.</em></h1>
+            <p>Cuéntanos qué necesitas mover y adónde. Prepara tu solicitud, compártela con el equipo y acuerda los detalles por llamada o mensaje.</p>
+            <a href="#quote-title" class="button button--primary">Preparar mi solicitud <span aria-hidden="true">↗</span></a>
+            <small class="hero-note">Sin precio automático. Una conversación para encontrar el servicio que necesitas.</small>
           </div>
-
-          <div class="trust-card">
-            <div class="avatar-stack" aria-hidden="true">
-              <span>MF</span><span>+1</span><span>✓</span>
+          <div class="hero-route" aria-label="De tu hogar actual a tu nuevo comienzo">
+            <div class="route-topline"><span>El siguiente capítulo</span><span class="mini-badge">A → B</span></div>
+            <div class="route-illustration" aria-hidden="true">
+              <svg viewBox="0 0 400 210" fill="none"><path d="M25 174H374" stroke="#5b6d7c" stroke-width="1"/><path d="M42 174V93l56-40 56 40v81H42Z" fill="#223b50" stroke="#7a8c99" stroke-width="2"/><path d="M34 96l64-47 65 47" stroke="#dce5e9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 174v-43h34v43M58 106h22v18H58zM116 106h22v18h-22z" fill="#e2c9a6" stroke="#142536" stroke-width="3"/><path d="M263 174V67h82v107" fill="#304a5d" stroke="#7a8c99" stroke-width="2"/><path d="M277 82h15v21h-15zM316 82h15v21h-15zM277 116h15v21h-15zM316 116h15v21h-15z" fill="#e2c9a6"/><path d="M295 174v-25h19v25" fill="#142536"/><path d="M178 113c31-28 48-28 70 0" stroke="#fd8b54" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 7"/><path d="m242 103 7 11-13 2" stroke="#fd8b54" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M168 146h38v28h-38z" fill="#fd8b54"/><path d="M185 146h5v11h-5z" fill="#ffbd93"/><path d="M209 157h24v17h-24z" fill="#d7aa77"/><path d="M220 157h3v7h-3z" fill="#efcfaa"/><path d="M252 58c0-9 13-9 13 0 0 5-6.5 11-6.5 11S252 63 252 58Z" fill="#fd8b54"/><circle cx="258.5" cy="57" r="2" fill="#142536"/></svg>
             </div>
-            <div>
-              <strong>Atención humana al finalizar</strong>
-              <p>Validamos accesos, volumen y condiciones antes de confirmar.</p>
-            </div>
+            <div class="route-captions"><span><small>DESDE</small>Donde estás hoy</span><span><small>HACIA</small>Lo que viene</span></div>
+            <div class="route-footer"><span class="route-circle" aria-hidden="true">✓</span>Los detalles claros. Las decisiones, en tus manos.</div>
           </div>
         </section>
 
-        <section class="quote-card" aria-labelledby="quote-title">
-          <div class="quote-card__header">
-            <div>
-              <span class="eyebrow eyebrow--dark">Cotizador</span>
-              <h2 id="quote-title">Cuéntanos sobre tu mudanza</h2>
-            </div>
-            <button class="text-button" id="resetQuote" type="button">Reiniciar</button>
-          </div>
-
-          <nav class="stepper" aria-label="Progreso de la cotización">
-            <button class="stepper__item is-active" type="button" data-go-step="1" aria-current="step">
-              <span>1</span><small>Ruta</small>
-            </button>
-            <span class="stepper__line"></span>
-            <button class="stepper__item" type="button" data-go-step="2">
-              <span>2</span><small>Inventario</small>
-            </button>
-            <span class="stepper__line"></span>
-            <button class="stepper__item" type="button" data-go-step="3">
-              <span>3</span><small>Servicios</small>
-            </button>
-            <span class="stepper__line"></span>
-            <button class="stepper__item" type="button" data-go-step="4">
-              <span>4</span><small>Datos</small>
-            </button>
-          </nav>
-
-          <form id="movingQuoteForm" novalidate>
-            <section class="form-step is-active" data-step="1" aria-labelledby="step-1-title">
-              <div class="section-heading">
-                <span>Paso 1 de 4</span>
-                <h3 id="step-1-title">¿De dónde sales y a dónde vas?</h3>
-                <p>La distancia y los accesos influyen en el costo operativo.</p>
-              </div>
-
-              <div class="form-grid">
-                <label class="field field--full">
-                  <span>Dirección de origen *</span>
-                  <span class="input-shell">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.6 7-12A7 7 0 1 0 5 9c0 6.4 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
-                    <input id="origin" name="origin" type="text" placeholder="Colonia, alcaldía o dirección" autocomplete="street-address" required />
-                  </span>
-                  <small class="field-error" data-error-for="origin"></small>
-                </label>
-
-                <label class="field field--full">
-                  <span>Dirección de destino *</span>
-                  <span class="input-shell">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.6 7-12A7 7 0 1 0 5 9c0 6.4 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>
-                    <input id="destination" name="destination" type="text" placeholder="Colonia, alcaldía o dirección" autocomplete="street-address" required />
-                  </span>
-                  <small class="field-error" data-error-for="destination"></small>
-                </label>
-
-                <label class="field">
-                  <span>Distancia aproximada *</span>
-                  <span class="input-shell input-shell--suffix">
-                    <input id="distanceKm" name="distanceKm" type="number" min="1" max="2000" step="1" value="10" required />
-                    <b>km</b>
-                  </span>
-                  <small class="field-hint">Después se puede automatizar con Google Maps.</small>
-                  <small class="field-error" data-error-for="distanceKm"></small>
-                </label>
-
-                <label class="field">
-                  <span>Fecha estimada *</span>
-                  <span class="input-shell">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
-                    <input id="moveDate" name="moveDate" type="date" required />
-                  </span>
-                  <small class="field-error" data-error-for="moveDate"></small>
-                </label>
-
-                <label class="field">
-                  <span>Tipo de inmueble en origen</span>
-                  <select id="originProperty" name="originProperty">
-                    <option value="house">Casa</option>
-                    <option value="apartment">Departamento</option>
-                    <option value="office">Oficina</option>
-                    <option value="storage">Bodega / almacén</option>
-                  </select>
-                </label>
-
-                <label class="field">
-                  <span>Tipo de inmueble en destino</span>
-                  <select id="destinationProperty" name="destinationProperty">
-                    <option value="house">Casa</option>
-                    <option value="apartment">Departamento</option>
-                    <option value="office">Oficina</option>
-                    <option value="storage">Bodega / almacén</option>
-                  </select>
-                </label>
-
-                <div class="access-card">
-                  <div class="access-card__head">
-                    <div>
-                      <strong>Acceso en origen</strong>
-                      <small>Selecciona el piso y si hay elevador.</small>
-                    </div>
-                    <span class="mini-badge">Origen</span>
-                  </div>
-                  <div class="access-card__controls">
-                    <label class="compact-field">
-                      <span>Piso</span>
-                      <input id="originFloor" name="originFloor" type="number" min="0" max="30" value="0" />
-                    </label>
-                    <label class="toggle-field">
-                      <input id="originElevator" name="originElevator" type="checkbox" />
-                      <span class="toggle" aria-hidden="true"></span>
-                      <span>Hay elevador</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div class="access-card">
-                  <div class="access-card__head">
-                    <div>
-                      <strong>Acceso en destino</strong>
-                      <small>Selecciona el piso y si hay elevador.</small>
-                    </div>
-                    <span class="mini-badge">Destino</span>
-                  </div>
-                  <div class="access-card__controls">
-                    <label class="compact-field">
-                      <span>Piso</span>
-                      <input id="destinationFloor" name="destinationFloor" type="number" min="0" max="30" value="0" />
-                    </label>
-                    <label class="toggle-field">
-                      <input id="destinationElevator" name="destinationElevator" type="checkbox" />
-                      <span class="toggle" aria-hidden="true"></span>
-                      <span>Hay elevador</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section class="form-step" data-step="2" aria-labelledby="step-2-title">
-              <div class="section-heading">
-                <span>Paso 2 de 4</span>
-                <h3 id="step-2-title">¿Qué vas a transportar?</h3>
-                <p>Elige un tamaño rápido y luego ajusta cada artículo.</p>
-              </div>
-
-              <div class="preset-grid" role="group" aria-label="Tamaños predefinidos de mudanza">
-                <button class="preset-card" type="button" data-preset="mini">
-                  <span class="preset-card__icon">◫</span>
-                  <strong>Mini mudanza</strong>
-                  <small>Habitación o pocos muebles</small>
-                </button>
-                <button class="preset-card" type="button" data-preset="oneBedroom">
-                  <span class="preset-card__icon">⌂</span>
-                  <strong>1 recámara</strong>
-                  <small>Departamento pequeño</small>
-                </button>
-                <button class="preset-card" type="button" data-preset="twoBedroom">
-                  <span class="preset-card__icon">▦</span>
-                  <strong>2 recámaras</strong>
-                  <small>Hogar mediano</small>
-                </button>
-                <button class="preset-card" type="button" data-preset="family">
-                  <span class="preset-card__icon">▤</span>
-                  <strong>Casa familiar</strong>
-                  <small>3+ recámaras</small>
-                </button>
-              </div>
-
-              <div class="inventory-toolbar">
-                <div>
-                  <strong>Inventario</strong>
-                  <span id="itemCountLabel">0 artículos seleccionados</span>
-                </div>
-                <button class="text-button" id="clearInventory" type="button">Limpiar inventario</button>
-              </div>
-
-              <div class="inventory-grid" id="inventoryGrid"></div>
-
-              <label class="field field--full custom-item-field">
-                <span>Otros artículos o consideraciones</span>
-                <textarea id="customItems" name="customItems" rows="3" placeholder="Ej. piano vertical, caja fuerte, macetas grandes, cristal delicado..."></textarea>
-              </label>
-            </section>
-
-            <section class="form-step" data-step="3" aria-labelledby="step-3-title">
-              <div class="section-heading">
-                <span>Paso 3 de 4</span>
-                <h3 id="step-3-title">Personaliza el servicio</h3>
-                <p>Agrega protección, maniobras y apoyo profesional.</p>
-              </div>
-
-              <div class="service-grid">
-                <label class="service-card">
-                  <input type="checkbox" name="service" value="packing" />
-                  <span class="service-card__check">✓</span>
-                  <span class="service-card__icon">▣</span>
-                  <strong>Empaque profesional</strong>
-                  <small>Materiales y protección para objetos de uso cotidiano.</small>
-                  <b>Desde $650</b>
-                </label>
-                <label class="service-card">
-                  <input type="checkbox" name="service" value="assembly" />
-                  <span class="service-card__check">✓</span>
-                  <span class="service-card__icon">⌘</span>
-                  <strong>Desarmado y armado</strong>
-                  <small>Camas, mesas, escritorios y muebles modulares.</small>
-                  <b>+$550</b>
-                </label>
-                <label class="service-card">
-                  <input type="checkbox" name="service" value="fragile" />
-                  <span class="service-card__check">✓</span>
-                  <span class="service-card__icon">◇</span>
-                  <strong>Manejo de frágiles</strong>
-                  <small>Vajilla, espejos, cristalería y electrónicos sensibles.</small>
-                  <b>+$420</b>
-                </label>
-                <label class="service-card">
-                  <input type="checkbox" name="service" value="insurance" />
-                  <span class="service-card__check">✓</span>
-                  <span class="service-card__icon">◉</span>
-                  <strong>Cobertura ampliada</strong>
-                  <small>Protección adicional sobre el valor operativo estimado.</small>
-                  <b>4% del subtotal</b>
-                </label>
-                <label class="service-card">
-                  <input type="checkbox" name="service" value="longCarry" />
-                  <span class="service-card__check">✓</span>
-                  <span class="service-card__icon">↔</span>
-                  <strong>Acarreo extendido</strong>
-                  <small>Más de 30 metros entre la unidad y el acceso.</small>
-                  <b>+$350</b>
-                </label>
-                <label class="service-card">
-                  <input type="checkbox" name="service" value="express" />
-                  <span class="service-card__check">✓</span>
-                  <span class="service-card__icon">ϟ</span>
-                  <strong>Servicio prioritario</strong>
-                  <small>Ventana de llegada preferente y atención acelerada.</small>
-                  <b>+12%</b>
-                </label>
-              </div>
-
-              <div class="form-grid form-grid--top-space">
-                <label class="field">
-                  <span>Horario preferido</span>
-                  <select id="timeWindow" name="timeWindow">
-                    <option value="morning">Mañana · 08:00 a 12:00</option>
-                    <option value="afternoon">Tarde · 12:00 a 17:00</option>
-                    <option value="evening">Tarde-noche · 17:00 a 20:00</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span>Nivel de protección</span>
-                  <select id="protectionLevel" name="protectionLevel">
-                    <option value="standard">Estándar</option>
-                    <option value="plus">Protección Plus</option>
-                    <option value="premium">Protección Premium</option>
-                  </select>
-                </label>
-              </div>
-
-              <label class="field field--full custom-item-field">
-                <span>Indicaciones para el equipo</span>
-                <textarea id="notes" name="notes" rows="4" placeholder="Restricciones de acceso, estacionamiento, horario del condominio, artículos que requieren cuidado especial..."></textarea>
-              </label>
-            </section>
-
-            <section class="form-step" data-step="4" aria-labelledby="step-4-title">
-              <div class="section-heading">
-                <span>Paso 4 de 4</span>
-                <h3 id="step-4-title">Recibe tu estimación</h3>
-                <p>Estos datos se usarán únicamente para dar seguimiento a la solicitud.</p>
-              </div>
-
-              <div class="form-grid">
-                <label class="field field--full">
-                  <span>Nombre completo *</span>
-                  <input id="customerName" name="customerName" type="text" placeholder="Tu nombre" autocomplete="name" required />
-                  <small class="field-error" data-error-for="customerName"></small>
-                </label>
-                <label class="field">
-                  <span>Teléfono *</span>
-                  <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="55 0000 0000" autocomplete="tel" required />
-                  <small class="field-error" data-error-for="phone"></small>
-                </label>
-                <label class="field">
-                  <span>Correo electrónico</span>
-                  <input id="email" name="email" type="email" placeholder="nombre@correo.com" autocomplete="email" />
-                  <small class="field-error" data-error-for="email"></small>
-                </label>
-              </div>
-
-              <div class="final-estimate" id="finalEstimate">
-                <div class="final-estimate__top">
-                  <span>Estimación preliminar</span>
-                  <strong id="finalRange">$0 — $0 MXN</strong>
-                  <small>Incluye impuestos estimados y costos operativos calculados.</small>
-                </div>
-                <div class="breakdown" id="breakdownList"></div>
-              </div>
-
-              <label class="consent-field">
-                <input id="privacyConsent" name="privacyConsent" type="checkbox" required />
-                <span>Acepto que un asesor me contacte para validar la cotización y confirmar disponibilidad.</span>
-              </label>
-              <small class="field-error" data-error-for="privacyConsent"></small>
-            </section>
-
-            <div class="form-actions">
-              <button class="button button--secondary is-hidden" id="prevStep" type="button">
-                <span aria-hidden="true">←</span> Anterior
-              </button>
-              <div class="form-actions__spacer"></div>
-              <button class="button button--primary" id="nextStep" type="button">
-                Continuar <span aria-hidden="true">→</span>
-              </button>
-              <button class="button button--primary is-hidden" id="submitQuote" type="submit">
-                Generar cotización <span aria-hidden="true">✓</span>
-              </button>
-            </div>
-          </form>
+        <section id="how-it-works" class="how-it-works" aria-label="Cómo funciona">
+          <article><span class="point-icon">01</span><div><h2>Cuéntanos tu plan</h2><p>Ruta, muebles y los apoyos que necesitas.</p></div></article>
+          <article><span class="point-icon">02</span><div><h2>Comparte tu solicitud</h2><p>Revisa tu ficha y envíala al equipo.</p></div></article>
+          <article><span class="point-icon">03</span><div><h2>Acuerda tu mudanza</h2><p>Habla con una persona y decide los términos.</p></div></article>
         </section>
 
-        <aside class="estimate-panel" aria-label="Resumen de la estimación">
-          <div class="estimate-panel__sticky">
-            <div class="estimate-card">
-              <div class="estimate-card__header">
-                <span>Estimación en tiempo real</span>
-                <span class="live-pill"><i></i> En vivo</span>
-              </div>
-              <div class="estimate-price">
-                <small>Desde</small>
-                <strong id="estimateFrom">$1,450</strong>
-                <span>MXN</span>
-              </div>
-              <p id="estimateRangeText">Rango sugerido: $1,450 — $1,750 MXN</p>
-
-              <div class="estimate-meter" aria-label="Nivel de complejidad">
-                <div class="estimate-meter__label">
-                  <span>Complejidad</span>
-                  <strong id="complexityLabel">Básica</strong>
+        <div class="main-layout">
+          <section class="quote-card" aria-labelledby="quote-title">
+            <div class="quote-card__header"><div><span class="eyebrow eyebrow--dark">Tu solicitud de mudanza</span><h2 id="quote-title" tabindex="-1">Hagamos espacio para lo que sigue.</h2></div><button class="text-button" id="resetQuote" type="button">Reiniciar</button></div>
+            <nav class="stepper" aria-label="Progreso de tu solicitud">
+              <button class="stepper__item is-active" type="button" data-go-step="1" aria-current="step"><span>1</span><small>Ruta y accesos</small></button><span class="stepper__line" aria-hidden="true"></span>
+              <button class="stepper__item" type="button" data-go-step="2"><span>2</span><small>Inventario</small></button><span class="stepper__line" aria-hidden="true"></span>
+              <button class="stepper__item" type="button" data-go-step="3"><span>3</span><small>Servicios</small></button><span class="stepper__line" aria-hidden="true"></span>
+              <button class="stepper__item" type="button" data-go-step="4"><span>4</span><small>Contacto</small></button>
+            </nav>
+            <form id="movingQuoteForm" novalidate>
+              <section class="form-step is-active" data-step="1" aria-labelledby="step-1-title">
+                <div class="section-heading"><span>Paso 1 de 4</span><h3 id="step-1-title">¿De dónde sales y a dónde vas?</h3><p>Comparte los domicilios y cómo se entra a cada uno. Los campos con * son obligatorios.</p></div>
+                <div class="form-grid">
+                  <label class="field"><span>Tipo de mudanza</span><select id="routeType" name="routeType"><option value="local">Local · dentro de la ciudad</option><option value="outOfTown">Foránea · entre ciudades</option></select></label>
+                  <label class="field is-hidden" id="foraneoFields"><span>Servicio foráneo</span><select id="foraneoMode" name="foraneoMode"><option value="undecided">Quiero asesoría</option><option value="direct">Directo · unidad exclusiva</option><option value="shared">Compartido · espacio con otras mudanzas</option></select><small class="field-hint">La disponibilidad y los tiempos se acuerdan con el equipo.</small></label>
+                  <label class="field field--full"><span>Domicilio de origen *</span><input id="origin" name="origin" maxlength="500" type="text" placeholder="Calle, número, colonia, ciudad y estado" autocomplete="section-origin street-address" required /><small class="field-error" data-error-for="origin"></small></label>
+                  <label class="field field--full"><span>Domicilio de destino *</span><input id="destination" name="destination" maxlength="500" type="text" placeholder="Calle, número, colonia, ciudad y estado" autocomplete="section-destination street-address" required /><small class="field-error" data-error-for="destination"></small></label>
+                  <label class="field"><span>Fecha de mudanza *</span><input id="moveDate" name="moveDate" type="date" required /><small class="field-error" data-error-for="moveDate"></small></label>
+                  <label class="field"><span>Flexibilidad de fecha</span><select id="dateFlexibility" name="dateFlexibility"><option value="exact">Necesito esa fecha</option><option value="flexible">Puedo ajustar la fecha</option></select></label>
+                  <label class="field field--full"><span>Distancia aproximada <em>Opcional</em></span><span class="input-shell input-shell--suffix"><input id="distanceKm" name="distanceKm" type="number" min="1" max="10000" step="1" placeholder="Si conoces la distancia por carretera" /><b>km</b></span><small class="field-hint">Puedes dejarla vacía; el equipo revisará la ruta contigo.</small><small class="field-error" data-error-for="distanceKm"></small></label>
                 </div>
-                <div class="estimate-meter__track"><span id="complexityBar"></span></div>
-              </div>
+                <div class="access-grid">
+                  <fieldset class="access-card"><legend><span class="location-dot">A</span> En origen</legend>
+                    <label class="field"><span>Tipo de inmueble</span><select id="originProperty" name="originProperty"><option value="house">Casa</option><option value="apartment">Departamento</option><option value="storage">Bodega</option><option value="duplex">Casa dúplex</option><option value="residential">Residencial</option><option value="residentialPlus">Residencial plus</option><option value="office">Oficina</option></select></label>
+                    <div class="form-grid"><label class="field"><span>Nivel o piso</span><input id="originFloor" name="originFloor" type="number" min="0" max="50" step="1" value="0" /><small class="field-hint">0 = planta baja</small><small class="field-error" data-error-for="originFloor"></small></label><label class="field"><span>Tipo de acceso</span><select id="originAccess" name="originAccess"><option value="ground">A nivel de calle</option><option value="stairs">Escaleras</option><option value="elevator">Elevador</option><option value="combined">Combinado</option></select></label></div>
+                    <label class="field is-hidden" id="originCombinedFields"><span>Pisos con elevador</span><input id="originElevatorFloors" name="originElevatorFloors" type="number" min="0" max="50" step="1" value="0" /><small class="field-hint">Pisos que se hacen por elevador; el resto, por escaleras.</small><small class="field-error" data-error-for="originElevatorFloors"></small></label>
+                    <label class="field"><span>Distancia de acarreo</span><select id="originCarryRange" name="originCarryRange"><option value="unknown">No lo sé todavía</option><option value="0-10">Hasta 10 metros</option><option value="11-20">De 11 a 20 metros</option><option value="21-30">De 21 a 30 metros</option><option value="over30">Más de 30 metros</option></select><small class="field-hint">Del lugar donde se estaciona la unidad al acceso.</small></label>
+                    <label class="field is-hidden" id="originCarryFields"><span>Metros aproximados <em>Opcional</em></span><input id="originCarryMeters" name="originCarryMeters" type="number" min="31" max="2000" step="1" placeholder="Ej. 45" /><small class="field-error" data-error-for="originCarryMeters"></small></label>
+                    <label class="field"><span>¿Se requiere vehículo de apoyo / traspaleo?</span><select id="originShuttle" name="originShuttle"><option value="unknown">Necesito que lo revisen</option><option value="no">No</option><option value="yes">Sí</option></select><small class="field-hint">Cuando la unidad principal no puede llegar al domicilio.</small></label>
+                  </fieldset>
+                  <fieldset class="access-card"><legend><span class="location-dot location-dot--destination">B</span> En destino</legend>
+                    <label class="field"><span>Tipo de inmueble</span><select id="destinationProperty" name="destinationProperty"><option value="house">Casa</option><option value="apartment">Departamento</option><option value="storage">Bodega</option><option value="duplex">Casa dúplex</option><option value="residential">Residencial</option><option value="residentialPlus">Residencial plus</option><option value="office">Oficina</option></select></label>
+                    <div class="form-grid"><label class="field"><span>Nivel o piso</span><input id="destinationFloor" name="destinationFloor" type="number" min="0" max="50" step="1" value="0" /><small class="field-hint">0 = planta baja</small><small class="field-error" data-error-for="destinationFloor"></small></label><label class="field"><span>Tipo de acceso</span><select id="destinationAccess" name="destinationAccess"><option value="ground">A nivel de calle</option><option value="stairs">Escaleras</option><option value="elevator">Elevador</option><option value="combined">Combinado</option></select></label></div>
+                    <label class="field is-hidden" id="destinationCombinedFields"><span>Pisos con elevador</span><input id="destinationElevatorFloors" name="destinationElevatorFloors" type="number" min="0" max="50" step="1" value="0" /><small class="field-hint">Pisos que se hacen por elevador; el resto, por escaleras.</small><small class="field-error" data-error-for="destinationElevatorFloors"></small></label>
+                    <label class="field"><span>Distancia de acarreo</span><select id="destinationCarryRange" name="destinationCarryRange"><option value="unknown">No lo sé todavía</option><option value="0-10">Hasta 10 metros</option><option value="11-20">De 11 a 20 metros</option><option value="21-30">De 21 a 30 metros</option><option value="over30">Más de 30 metros</option></select><small class="field-hint">Del lugar donde se estaciona la unidad al acceso.</small></label>
+                    <label class="field is-hidden" id="destinationCarryFields"><span>Metros aproximados <em>Opcional</em></span><input id="destinationCarryMeters" name="destinationCarryMeters" type="number" min="31" max="2000" step="1" placeholder="Ej. 45" /><small class="field-error" data-error-for="destinationCarryMeters"></small></label>
+                    <label class="field"><span>¿Se requiere vehículo de apoyo / traspaleo?</span><select id="destinationShuttle" name="destinationShuttle"><option value="unknown">Necesito que lo revisen</option><option value="no">No</option><option value="yes">Sí</option></select><small class="field-hint">El equipo confirma la maniobra después de revisar el acceso.</small></label>
+                  </fieldset>
+                </div>
+              </section>
 
-              <dl class="estimate-summary">
-                <div><dt>Distancia</dt><dd id="summaryDistance">10 km</dd></div>
-                <div><dt>Artículos</dt><dd id="summaryItems">0</dd></div>
-                <div><dt>Volumen estimado</dt><dd id="summaryVolume">0.0 m³</dd></div>
-                <div><dt>Unidad sugerida</dt><dd id="summaryVehicle">Van ligera</dd></div>
-              </dl>
+              <section class="form-step" data-step="2" aria-labelledby="step-2-title">
+                <div class="section-heading"><span>Paso 2 de 4</span><h3 id="step-2-title">Cada espacio tiene su historia.</h3><p>Indica cuántas habitaciones amuebladas tienes y selecciona lo que vas a mover.</p></div>
+                <div class="inventory-toolbar"><div><h4>Tus habitaciones</h4><span id="roomCountLabel">0 habitaciones</span></div></div>
+                <div class="room-grid" id="roomGrid" aria-label="Cantidad de habitaciones amuebladas"></div>
+                <p class="field-hint inventory-hint">Las habitaciones ayudan a organizar tu solicitud. Las cantidades de muebles son el total de toda la mudanza; no se multiplican por el número de habitaciones.</p>
+                <div class="inventory-toolbar"><div><h4>Ahora, tus muebles</h4><span id="itemCountLabel">0 artículos seleccionados</span></div><button class="text-button" id="clearInventory" type="button">Limpiar inventario</button></div>
+                <label class="field inventory-search"><span class="sr-only">Buscar muebles y artículos</span><input id="inventorySearch" type="search" placeholder="Buscar un mueble o artículo…" autocomplete="off" /></label>
+                <div class="room-tabs" id="roomTabs" aria-label="Filtrar muebles por habitación"></div>
+                <div class="inventory-grid" id="inventoryGrid"></div>
+                <small id="inventoryError" class="field-error inventory-error" role="status"></small>
+                <div class="selected-inventory" id="selectedInventory" aria-label="Muebles seleccionados"></div>
+                <div class="form-grid form-grid--top-space">
+                  <label class="field field--full"><span>¿Falta algo en la lista?</span><textarea id="customItems" name="customItems" maxlength="3000" rows="3" placeholder="Describe los artículos y sus cantidades. Ej. 3 macetas grandes y 1 bicicleta."></textarea><small class="field-hint">Se incluirá como nota para el equipo; no se suma al contador de artículos.</small></label>
+                  <label class="field field--full"><span>Detalles de muebles especiales</span><textarea id="specialNotes" name="specialNotes" maxlength="3000" rows="3" placeholder="Piano, caja fuerte, cantina, bodega armable… Si los conoces, agrega peso, medidas y dificultades de acceso."></textarea><small class="field-hint">Los artículos especiales requieren que el equipo confirme el manejo y las maniobras.</small></label>
+                </div>
+              </section>
 
-              <div class="estimate-note">
-                <span aria-hidden="true">i</span>
-                <p>El precio final se confirma al validar accesos, volumen real y disponibilidad.</p>
-              </div>
+              <section class="form-step" data-step="3" aria-labelledby="step-3-title">
+                <div class="section-heading"><span>Paso 3 de 4</span><h3 id="step-3-title">¿En qué más te ayudamos?</h3><p>Indica el apoyo que necesitas. El equipo revisará contigo el alcance de cada servicio.</p></div>
+                <fieldset class="service-section"><legend>Empaque</legend><div class="form-grid">
+                  <label class="field field--full"><span>¿Cómo quieres preparar tus cosas?</span><select id="packingType" name="packingType"><option value="undecided">Quiero asesoría para decidir</option><option value="none">Yo me encargo del empaque</option><option value="partial">Empaque parcial</option><option value="full">Empaque completo</option><option value="boxes">Servicio de empaque de cajas</option></select></label>
+                  <label class="field field--full is-hidden" id="boxFields"><span>Cajas por empacar <em>Opcional</em></span><input id="boxCount" name="boxCount" type="number" min="0" max="5000" step="1" placeholder="Cantidad aproximada" /><small class="field-error" data-error-for="boxCount"></small></label>
+                </div>
+                <div class="notice is-hidden" id="packingNotice"><strong>Si empacas por tu cuenta, no se recogen artículos sueltos.</strong><p>Revisa la guía y deja tus pertenencias listas para transportarlas.</p><label class="consent-field"><input id="packingAcknowledged" name="packingAcknowledged" type="checkbox" /><span>Entiendo que debo entregar los artículos correctamente empacados.</span></label><small class="field-error" data-error-for="packingAcknowledged"></small></div>
+                <details class="packing-guide" id="packingGuide"><summary>Una guía rápida para empacar bien</summary><ol><li>Usa cajas reforzadas en buen estado y evita sobrecargarlas.</li><li>Cierra la base y la tapa con cinta; no dejes artículos sueltos.</li><li>Etiqueta cada caja con su habitación, contenido y orientación.</li><li>Protege los objetos frágiles por separado y rellena los espacios vacíos.</li><li>Consulta al equipo cómo preparar objetos pesados, especiales o de alto valor antes de la mudanza.</li></ol></details>
+                </fieldset>
+                <fieldset class="service-section"><legend>Maniobras y apoyo</legend><div class="form-grid">
+                  <label class="field"><span>Volado por fachada</span><select id="hoistService" name="hoistService"><option value="no">No lo necesito</option><option value="yes">Sí, necesito volado</option><option value="unknown">Necesito que lo revisen</option></select><small class="field-hint">Para muebles que no pasan por escaleras o elevador. Se confirma su viabilidad.</small></label>
+                  <label class="field"><span>Traspaleo / vehículo de apoyo</span><select id="shuttleService" name="shuttleService"><option value="no">No lo necesito</option><option value="yes">Sí, necesito apoyo</option><option value="unknown">Necesito que lo revisen</option></select><small class="field-hint">Traslado entre una unidad pequeña y la principal cuando el acceso lo requiere.</small></label>
+                  <div class="form-grid field--full is-hidden" id="hoistFields"><label class="field"><span>Piso para bajar por fachada</span><input id="hoistDownFloors" name="hoistDownFloors" type="number" min="0" max="50" step="1" value="0" /><small class="field-hint">0 si no necesitas bajar muebles.</small><small class="field-error" data-error-for="hoistDownFloors"></small></label><label class="field"><span>Piso para subir por fachada</span><input id="hoistUpFloors" name="hoistUpFloors" type="number" min="0" max="50" step="1" value="0" /><small class="field-hint">0 si no necesitas subir muebles.</small><small class="field-error" data-error-for="hoistUpFloors"></small></label></div>
+                  <label class="field"><span>Muebles por desmontar / montar</span><input id="assemblyCount" name="assemblyCount" type="number" min="0" max="99" step="1" value="0" /><small class="field-hint">El equipo confirma cuáles requieren este servicio.</small><small class="field-error" data-error-for="assemblyCount"></small></label>
+                  <label class="field"><span>Cargadores adicionales solicitados</span><input id="extraLoaders" name="extraLoaders" type="number" min="0" max="20" step="1" value="0" /><small class="field-hint">Déjalo en 0 si prefieres que el equipo te oriente.</small><small class="field-error" data-error-for="extraLoaders"></small></label>
+                  <label class="field field--full"><span>Días de almacenaje temporal</span><input id="storageDays" name="storageDays" type="number" min="0" max="365" step="1" value="0" /><small class="field-hint">0 si no necesitas bodega. Disponibilidad y condiciones por confirmar.</small><small class="field-error" data-error-for="storageDays"></small></label>
+                  <label class="field field--full"><span>Algo más que debamos saber</span><textarea id="notes" name="notes" maxlength="3000" rows="3" placeholder="Horarios de acceso, permisos, estacionamiento, qué necesitas empacar…"></textarea></label>
+                </div></fieldset>
+              </section>
+
+              <section class="form-step" data-step="4" aria-labelledby="step-4-title">
+                <div class="section-heading"><span>Paso 4 de 4</span><h3 id="step-4-title">El siguiente paso es conversar.</h3><p>Revisa tus datos y elige cómo compartir tu solicitud. El precio y las condiciones se acuerdan con una persona.</p><div class="account-invite"><strong>Tu mudanza, también en tu cuenta.</strong><p id="requestAccountStatus">Estamos comprobando la disponibilidad del registro.</p><a id="requestAccountLink" href="./cuenta.html">Entrar o crear mi cuenta</a></div></div>
+                <div class="form-grid">
+                  <label class="field field--full"><span>Nombre *</span><input id="customerName" name="customerName" maxlength="100" type="text" autocomplete="name" placeholder="¿Cómo te llamas?" required /><small class="field-error" data-error-for="customerName"></small></label>
+                  <label class="field"><span>Teléfono *</span><input id="phone" name="phone" maxlength="40" type="tel" autocomplete="tel" placeholder="10 dígitos o con código de país" required /><small class="field-error" data-error-for="phone"></small></label>
+                  <label class="field"><span>Correo electrónico <em>Opcional</em></span><input id="email" name="email" maxlength="254" type="email" autocomplete="email" placeholder="nombre@correo.com" /><small class="field-error" data-error-for="email"></small></label>
+                  <label class="field"><span>Prefiero que me contacten por</span><select id="contactMethod" name="contactMethod"><option value="whatsapp">WhatsApp</option><option value="call">Llamada telefónica</option><option value="either">Llamada o WhatsApp</option></select></label>
+                  <label class="field"><span>Mejor horario para contactarme</span><select id="contactWindow" name="contactWindow"><option value="anytime">Cualquier horario</option><option value="morning">Por la mañana</option><option value="afternoon">Por la tarde</option><option value="evening">Por la noche</option></select></label>
+                </div>
+                <div class="review-card"><div class="review-card__heading"><span class="eyebrow eyebrow--dark">Antes de compartir</span><h4>Así va tu solicitud</h4></div><dl class="review-summary" id="reviewSummary"></dl><div class="request-warnings" id="requestWarnings" role="status"></div></div>
+                <div class="notice notice--neutral"><strong>Tú eliges cuándo y con quién compartir.</strong><p>Al preparar la solicitud se genera una ficha para revisar, copiar o enviar por WhatsApp. Durante el piloto, la atención está a cargo del negocio familiar. Compartir con otros mudanceros requiere tu autorización adicional. El servicio y el precio final se acuerdan directamente con el negocio.</p></div>
+                <label class="consent-field"><input id="privacyConsent" name="privacyConsent" type="checkbox" required /><span>He leído el <a href="./privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a> y autorizo al equipo familiar a contactarme sobre esta mudanza cuando envíe la ficha. Acepto los <a href="./terminos.html" target="_blank" rel="noopener">términos del servicio</a>. Preparar la ficha todavía no la envía.</span></label><small class="field-error" data-error-for="privacyConsent"></small><label class="consent-field" id="networkConsentField" hidden><input id="networkConsent" type="checkbox" /><span>Además, autorizo compartir esta solicitud y mis datos de contacto con los mudanceros aprobados de la red para que puedan ofrecerme el servicio. Es opcional.</span></label>
+              </section>
+              <div class="form-actions"><button id="prevStep" class="button button--secondary is-hidden" type="button">Anterior</button><span class="form-actions__spacer"></span><button id="nextStep" class="button button--primary" type="button">Continuar <span aria-hidden="true">→</span></button><button id="submitQuote" class="button button--primary is-hidden" type="submit">Preparar solicitud <span aria-hidden="true">↗</span></button></div>
+              <p class="draft-feedback" id="draftFeedback" role="status"></p>
+            </form>
+          </section>
+
+          <aside class="request-panel" aria-labelledby="request-panel-title"><div class="request-panel__sticky">
+            <div class="request-card"><div class="request-card__header"><span class="eyebrow eyebrow--dark">Un vistazo a tu plan</span><span class="mini-badge">Borrador</span></div><h2 id="request-panel-title">Tu mudanza<br />toma forma.</h2>
+              <dl class="request-summary"><div><dt>Ruta</dt><dd id="summaryRoute">Agrega origen y destino</dd></div><div><dt>Modalidad</dt><dd id="summaryMode">Local</dd></div><div><dt>Habitaciones</dt><dd id="summaryRooms">0</dd></div><div><dt>Artículos</dt><dd id="summaryItems">0</dd></div><div><dt>Servicios</dt><dd id="summaryServices">Por definir</dd></div></dl>
+              <div class="human-agreement"><span aria-hidden="true">↗</span><div><strong>Precio a convenir con el equipo</strong><p>Tu ficha reúne los detalles para conversar y recibir una propuesta personalizada.</p></div></div>
             </div>
-
-            <div class="security-strip">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-3.8 8-10V5l-8-3-8 3v7c0 6.2 8 10 8 10Z"/><path d="m9 12 2 2 4-5"/></svg>
-              <div><strong>Tus datos están protegidos</strong><small>No compartimos tu información con terceros.</small></div>
-            </div>
-          </div>
-        </aside>
+            <div class="pilot-note"><span class="mini-badge">Piloto familiar</span><h3>Personas que te acompañan.</h3><p>Empezamos con nuestro negocio familiar. Revisamos cada solicitud para conversar contigo y preparar una propuesta a tu medida.</p><a href="./panel.html">Consultar mi solicitud <span aria-hidden="true">↗</span></a></div>
+          </div></aside>
+        </div>
+        <section class="provider-section" id="para-mudanceros" aria-labelledby="provider-title">
+          <div><span class="eyebrow">Para quienes mueven historias</span><h2 id="provider-title">Tu siguiente cliente<br />empieza con una conversación.</h2><p>Recibe solicitudes con ruta, inventario y necesidades claras. Contacta al cliente, presenta tu propuesta y acuerda el servicio directamente.</p></div>
+          <div class="provider-plan"><span class="mini-badge">Acceso por aprobación</span><h3>Piloto sin costo</h3><p>Primero, el negocio familiar. La incorporación de otros mudanceros será gradual y cada solicitud se compartirá con autorización del cliente.</p><ul><li>Una cuenta para tu negocio</li><li>Avisos de solicitudes dentro de tu panel</li><li>Datos del cliente solo con acceso autorizado</li></ul><a class="button button--primary" href="./cuenta.html#proveedor">Conocer el registro de mudanceros ↗</a><small>Las suscripciones de pago todavía no están disponibles.</small></div>
+        </section>
       </main>
-
-      <footer class="site-footer">
-        <span>© <span id="currentYear"></span> MoveFlow. Cotizador demostrativo.</span>
-        <span>Diseñado para evolucionar a una plataforma comercial completa.</span>
-      </footer>
+      <footer class="site-footer"><a class="footer-brand" href="#">MoveFlow<span>Tu mudanza empieza con una conversación.</span></a><p>Atención personal con nuestro negocio familiar.<br />El servicio y su precio se acuerdan directamente.</p><nav aria-label="Información legal"><a href="./privacidad.html">Privacidad</a> · <a href="./terminos.html">Términos</a> · <a href="./cuenta.html">Mi cuenta</a></nav></footer>
     </div>
 
-    <div class="modal-backdrop" id="quoteModal" aria-hidden="true">
-      <section class="success-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <button class="modal-close" id="closeModal" type="button" aria-label="Cerrar">×</button>
-        <span class="success-icon" aria-hidden="true">✓</span>
-        <span class="eyebrow eyebrow--dark">Cotización generada</span>
-        <h2 id="modalTitle">¡Tu estimación está lista!</h2>
-        <p>Guarda este resumen o compártelo con un asesor para validar disponibilidad y precio final.</p>
-
-        <div class="modal-price">
-          <span>Rango estimado</span>
-          <strong id="modalRange">$0 — $0 MXN</strong>
-        </div>
-
-        <div class="modal-summary" id="modalSummary"></div>
-
-        <div class="modal-actions">
-          <button class="button button--primary" id="printQuote" type="button">Imprimir / guardar PDF</button>
-          <button class="button button--secondary" id="copyQuote" type="button">Copiar resumen</button>
-        </div>
-        <small class="copy-feedback" id="copyFeedback" role="status"></small>
-      </section>
-    </div>
-
+    <div class="modal-backdrop" id="quoteModal" aria-hidden="true"><section class="success-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1"><button class="modal-close" id="closeModal" type="button" aria-label="Cerrar solicitud">×</button><div class="success-icon" aria-hidden="true">✓</div><span class="eyebrow eyebrow--dark">Lista para conversar</span><h2 id="modalTitle">Solicitud preparada</h2><p>Revisa tu ficha y compártela con el equipo del negocio familiar. El acuerdo se hace por llamada o mensaje.</p><p class="request-reference">Referencia <strong id="requestReference"></strong></p><dl class="modal-summary" id="modalSummary"></dl><div class="modal-inventory" id="modalInventory"></div><p class="submission-status" id="submissionStatus" role="status"></p><p class="business-contact">Destino de WhatsApp: <span id="businessName">Equipo de mudanzas familiar</span> · <span id="businessContact"></span></p><p id="cloudAvailability" class="field-hint"></p><p id="cloudSendStatus" class="submission-status" role="status" aria-live="polite"></p><div class="modal-actions"><button id="sendCloudRequest" type="button" class="button button--primary" hidden>Enviar al equipo</button><a id="shareWhatsApp" class="button button--primary" href="#" target="_blank" rel="noopener noreferrer">Compartir por WhatsApp</a><button id="copyQuote" class="button button--secondary" type="button">Copiar ficha</button><button id="printQuote" class="button button--secondary" type="button">Imprimir / guardar PDF</button><button id="downloadRequest" class="button button--secondary" type="button">Descargar ficha</button></div><small class="copy-feedback" id="copyFeedback" role="status"></small><p class="modal-pilot-link"><a href="./panel.html">Ver mis solicitudes y seguimiento ↗</a></p></section></div>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>

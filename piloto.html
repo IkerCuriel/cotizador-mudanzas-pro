@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Panel local de pruebas para dar seguimiento a solicitudes de mudanza y registrar propuestas conversadas con el cliente." />
+    <title>Solicitudes del piloto · MoveFlow</title>
+  </head>
+  <body class="pilot-page">
+    <a class="pilot-skip" href="#pilot-main">Ir a las solicitudes</a>
+    <div class="pilot-shell">
+      <header class="pilot-header">
+        <a class="pilot-brand" href="./index.html"><span class="pilot-brand-mark" aria-hidden="true">M</span><span>MoveFlow<small>Panel de pruebas</small></span></a>
+        <a class="pilot-button pilot-button--plain" href="./index.html">Ir al formulario <span aria-hidden="true">↗</span></a>
+      </header>
+      <main id="pilot-main">
+        <section class="pilot-intro" aria-labelledby="pilot-title">
+          <div><p class="pilot-eyebrow">Piloto del negocio familiar</p><h1 id="pilot-title">Conversaciones que<br />terminan en una mudanza.</h1><p>Revisa lo que necesita cada cliente, llámale y registra las propuestas que hayan conversado.</p></div>
+          <div class="pilot-counter"><strong id="request-count">0</strong><span>solicitudes en<br />este navegador</span></div>
+        </section>
+        <aside class="pilot-local-note"><strong>Guardado solo en este navegador.</strong> Este panel no es privado ni tiene sincronización entre equipos. No hay una red pública de mudanceros ni envíos automáticos. Para revisar una solicitud de otro equipo, importa su archivo.</aside>
+        <div id="pilot-feedback" class="pilot-feedback" role="status" aria-live="polite" hidden></div>
+        <div class="pilot-workspace">
+          <aside class="pilot-inbox" aria-labelledby="inbox-title">
+            <div class="pilot-section-heading"><h2 id="inbox-title">Solicitudes</h2><button class="pilot-text-button" id="refresh-requests" type="button">Actualizar</button></div>
+            <button class="pilot-button pilot-button--outline pilot-import-button" id="import-request" type="button">Importar solicitud (.json)</button>
+            <input type="file" id="import-file" accept="application/json,.json" hidden />
+            <p class="pilot-small">El archivo contiene datos de contacto. Compártelo únicamente con quien dará seguimiento.</p>
+            <div id="request-list" class="pilot-request-list"></div>
+          </aside>
+          <section id="request-detail" class="pilot-detail" aria-label="Detalle de la solicitud"></section>
+        </div>
+      </main>
+      <footer class="pilot-footer"><span>MoveFlow · piloto local</span><span>El precio y las condiciones se acuerdan directamente con el cliente.</span></footer>
+    </div>
+    <dialog class="pilot-import-dialog" id="replace-dialog" aria-labelledby="replace-title">
+      <h2 id="replace-title">Combinar copias de la solicitud.</h2>
+      <p id="replace-description"></p>
+      <p>Se agregarán las propuestas nuevas conservando el seguimiento actual. Si las copias contienen datos o elecciones incompatibles, la importación se detendrá sin modificar la solicitud.</p>
+      <div class="pilot-contact-actions"><button class="pilot-button pilot-button--outline" id="backup-existing" type="button">Descargar copia actual</button><button class="pilot-button pilot-button--dark" id="replace-existing" type="button">Combinar copias</button><button class="pilot-button pilot-button--outline" id="cancel-import" type="button" autofocus>Conservar actual</button></div>
+    </dialog>
+    <script type="module" src="/src/pilot.js"></script>
+  </body>
+</html>
