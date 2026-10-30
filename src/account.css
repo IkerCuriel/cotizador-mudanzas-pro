@@ -51,3 +51,8 @@
 @media (max-width: 950px) { .account-layout { gap: 5%; margin-right: 0; margin-left: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 430px); } .account-card { padding: 28px; } .account-story h1 { font-size: 40px; } }
 @media (max-width: 740px) { .cloud-shell { width: calc(100% - 36px); } .cloud-header { min-height: 84px; gap: 14px; } .cloud-brand small { display: none; } .cloud-brand strong { font-size: 21px; } .cloud-header-link { font-size: 10px; } .account-layout { grid-template-columns: 1fr; gap: 25px; margin-top: 30px; } .account-story { padding: 0; } .account-story h1 { font-size: 38px; margin-bottom: 14px; } .account-story > p { font-size: 12px; max-width: 520px; } .account-story ol, .account-story-note { display: none; } .account-card { padding: 27px 22px; } .cloud-form input, .cloud-form select, .cloud-form textarea { font-size: 16px; } .cloud-empty { min-height: 300px; } }
 @media (prefers-reduced-motion: reduce) { .cloud-loading { animation: none; } }
+
+.account-mfa-qr { display: block; width: min(240px, 100%); height: auto; margin: 18px auto; background: #fff; }
+.account-mfa-secret { display: block; padding: 15px 0; overflow-wrap: anywhere; font-size: 12px; }
+#account-security .cloud-form { margin: 24px 0; }
+#account-security > .cloud-small { margin-top: 24px; }

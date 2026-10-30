@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { normalizeDraft } from '../src/request.js';
 
@@ -18,22 +18,27 @@ await test('backend: autorización real, aislamiento y transacciones en PostgreS
     create schema auth;
     create table auth.users(id uuid primary key, email text, email_confirmed_at timestamptz, raw_user_meta_data jsonb default '{}'::jsonb);
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+    create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
     grant usage on schema auth to anon, authenticated;
-    grant execute on function auth.uid() to anon, authenticated;
+    grant execute on function auth.uid(), auth.jwt() to anon, authenticated;
     grant usage on schema public to anon, authenticated;
   `);
-  await db.exec(await readFile(new URL('../supabase/migrations/202610300001_platform.sql',import.meta.url),'utf8'));
+  const migrations = new URL('../supabase/migrations/', import.meta.url);
+  for (const filename of (await readdir(migrations)).filter((name) => name.endsWith('.sql')).sort()) {
+    await db.exec(await readFile(new URL(filename, migrations), 'utf8'));
+  }
   for (const [name,id] of Object.entries(ids)) await db.query(`insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values($1,$2,$3,$4)`,[id,`${name}@example.test`,name === 'unverified' ? null : new Date().toISOString(),{role:'superadmin',provider_status:'approved',display_name:'  Usuario de prueba  ',phone:'+52 5512345678',company_name:'Empresa de registro'}]);
   await db.query(`update public.profiles set role='superadmin' where id=$1`,[ids.owner]);
   await db.query(`update public.profiles set role='admin' where id=$1`,[ids.admin]);
   await db.query(`update public.profiles set role='provider',company_name='Empresa de prueba',provider_status='approved',plan_expires_at=now()+interval '30 days' where id=any($1::uuid[])`,[[ids.family,ids.other]]);
   await db.query(`update public.profiles set role='provider' where id=$1`,[ids.pending]);
   await db.query(`update public.profiles set is_family=true where id=$1`,[ids.family]);
-  await db.query(`update private.platform_settings set accepting_requests=true,family_provider_id=$1`,[ids.family]);
+  await db.query(`update private.platform_settings set accepting_requests=true`);
 
-  const as = async (who) => {
+  const as = async (who, assurance = ['owner','admin','family','other','pending'].includes(who) ? 'aal2' : 'aal1') => {
     await db.exec('reset role');
     await db.query(`select set_config('request.jwt.claim.sub',$1,false)`,[who ? ids[who] : '']);
+    await db.query(`select set_config('request.jwt.claims',$1,false)`,[JSON.stringify({sub: who ? ids[who] : '', aal: assurance})]);
     await db.exec(`set role ${who ? 'authenticated' : 'anon'}`);
   };
   const root = () => db.exec('reset role');
@@ -91,6 +96,16 @@ await test('backend: autorización real, aislamiento y transacciones en PostgreS
         assert.equal((await db.query(`select count(*)::int as n from private.audit_events where subject_id=$1 and action='account_privacy_accepted'`,[account])).rows[0].n,0);
       }
     });
+    await check('la invitación requiere aceptación personal vigente y se audita una sola vez',async()=>{
+      await as(null); await denied(()=>db.query(`select public.accept_account_privacy('2026-10-30')`),/permission denied/);
+      await as('unverified'); await denied(()=>db.query(`select public.accept_account_privacy('2026-10-30')`),/Verifica tu correo/);
+      await as('alice'); await denied(()=>db.query(`select public.accept_account_privacy('old')`),/aviso de privacidad cambió/);
+      await db.query(`select public.accept_account_privacy('2026-10-30')`);
+      await db.query(`select public.accept_account_privacy('2026-10-30')`);
+      await root(); const events=(await db.query(`select * from private.audit_events where action='account_privacy_accepted' and actor_id=$1`,[ids.alice])).rows;
+      assert.equal(events.length,1); assert.equal(events[0].subject_id,ids.alice);
+      assert.equal(events[0].details.source,'invitation');
+    });
     await check('visitantes solo leen configuración pública sin datos privados',async()=>{
       await as(null);
       assert.equal((await db.query(`select public.public_site_config() as config`)).rows[0].config.accepting_requests,true);
@@ -139,7 +154,7 @@ await test('backend: autorización real, aislamiento y transacciones en PostgreS
       await as('admin'); await denied(()=>db.query(`select public.set_request_status($1,'contacted')`,[request.id]),/cerrada no se puede reabrir/);
     });
     await check('sin receptor habilitado todo el envío se revierte',async()=>{
-      await root(); await db.exec(`update private.platform_settings set family_provider_id=null`);
+      await root(); await db.exec(`update public.profiles set is_family=false`);
       await as('alice'); await denied(()=>submit(),/No hay una empresa habilitada/);
       await root(); assert.equal((await db.query(`select count(*)::int as n from public.move_requests`)).rows[0].n,0);
       assert.equal((await db.query(`select count(*)::int as n from public.notifications`)).rows[0].n,0);
@@ -174,6 +189,7 @@ await test('backend: autorización real, aislamiento y transacciones en PostgreS
       await as('alice'); await db.query(`select public.join_provider('Empresa solicitante')`);
       let profile = (await db.query(`select * from public.profiles`)).rows[0];
       assert.equal(profile.role,'provider'); assert.equal(profile.provider_status,'pending'); assert.equal(profile.plan_expires_at,null);
+      await as('alice','aal2');
       await denied(()=>db.query(`select public.set_provider_access($1,'approved',now()+interval '30 days',false)`,[ids.alice]),/Solo la administración/);
       await as('admin'); await db.query(`select public.set_provider_access($1,'approved',now()+interval '30 days',false)`,[ids.alice]);
       await denied(()=>db.query(`select public.set_provider_access($1,'approved',now()+interval '30 days',true)`,[ids.alice]),/Solo el superusuario/);
@@ -182,6 +198,47 @@ await test('backend: autorización real, aislamiento y transacciones en PostgreS
       await db.query(`select public.set_user_role($1,'admin')`,[ids.alice]);
       profile = (await db.query(`select * from public.profiles where id=$1`,[ids.alice])).rows[0];
       assert.equal(profile.role,'admin'); assert.equal(profile.provider_status,'pending'); assert.equal(profile.plan_expires_at,null);
+    });
+    await check('el equipo familiar recibe una notificación por asesor sin abrir solicitudes ajenas',async()=>{
+      await as('owner'); await db.query(`select public.set_provider_access($1,'approved',now()+interval '30 days',true)`,[ids.other]);
+      await as('alice'); const request = await submit(); await submit();
+      await root();
+      assert.equal((await db.query(`select count(*)::int as n from public.request_recipients where request_id=$1`,[request.id])).rows[0].n,2);
+      assert.equal((await db.query(`select count(*)::int as n from public.notifications where request_id=$1`,[request.id])).rows[0].n,2);
+      assert.equal((await db.query(`select count(*)::int as n from public.profiles where is_family`)).rows[0].n,2);
+      await as('other'); assert.equal((await db.query(`select id from public.move_requests`)).rows[0].id,request.id);
+      await as('pending'); assert.equal((await db.query(`select id from public.move_requests`)).rows.length,0);
+      await as('bob'); assert.equal((await db.query(`select id from public.move_requests`)).rows.length,0);
+      await as('owner'); await db.query(`select public.set_provider_access($1,'suspended',now()+interval '30 days',true)`,[ids.other]);
+      await as('other'); assert.equal((await db.query(`select id from public.move_requests`)).rows.length,0);
+      await as('family'); assert.equal((await db.query(`select id from public.move_requests`)).rows[0].id,request.id);
+    });
+    await check('retirar a un asesor del equipo familiar revoca las solicitudes familiares anteriores',async()=>{
+      await as('alice'); await submit();
+      await as('family'); assert.equal((await db.query(`select id from public.move_requests`)).rows.length,1);
+      await as('owner'); await db.query(`select public.set_provider_access($1,'approved',now()+interval '30 days',false)`,[ids.family]);
+      await as('family'); assert.equal((await db.query(`select id from public.move_requests`)).rows.length,0);
+      assert.equal((await db.query(`select request_id from public.request_recipients`)).rows.length,0);
+    });
+    await check('agregar al equipo familiar no concede asignaciones de solicitudes anteriores',async()=>{
+      await as('alice'); await submit();
+      await as('owner'); await db.query(`select public.set_provider_access($1,'approved',now()+interval '30 days',true)`,[ids.other]);
+      await as('other'); assert.equal((await db.query(`select id from public.move_requests`)).rows.length,0);
+    });
+    await check('MFA se exige en SQL a proveedores y administradores incluso usando directamente la API',async()=>{
+      await as('alice'); const request=await submit();
+      for (const who of ['owner','admin','family']) {
+        await as(who,'aal1');
+        assert.equal((await db.query(`select id from public.move_requests`)).rows.length,0);
+        assert.equal((await db.query(`select id from public.notifications`)).rows.length,0);
+        assert.equal((await db.query(`select id from public.profiles`)).rows.length,1);
+        assert.equal((await db.query(`update public.profiles set display_name='Sin segundo factor' where id=$1 returning id`,[ids[who]])).rows.length,0);
+        await denied(()=>db.query(`select public.set_request_status($1,'contacted')`,[request.id]),/segundo factor/);
+        await denied(()=>db.query(`select public.set_provider_access($1,'approved',now()+interval '30 days',true)`,[ids.other]),/segundo factor/);
+      }
+      await as('owner','aal1'); await denied(()=>db.query(`select public.set_user_role($1,'admin')`,[ids.bob]),/segundo factor/);
+      await as('family','aal2'); assert.equal((await db.query(`select id from public.move_requests`)).rows.length,1);
+      await as('admin','aal2'); await db.query(`select public.set_request_status($1,'contacted')`,[request.id]);
     });
     await check('notificaciones son privadas y sólo el dueño puede marcarlas',async()=>{
       await as('alice'); await submit();

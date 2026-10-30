@@ -76,6 +76,22 @@ export async function submitCloudRequest(request, audience = 'family') {
   return data;
 }
 
+/** Server policies enforce this too; this helper chooses the appropriate account screen. */
+export function requiresSecondFactor(profile) {
+  return ['provider', 'admin', 'superadmin'].includes(profile?.role);
+}
+
+export async function getAccountSecurity() {
+  const client = requireCloud();
+  const [{ data: assurance, error: assuranceError }, { data: factors, error: factorError }] = await Promise.all([
+    client.auth.mfa.getAuthenticatorAssuranceLevel(), client.auth.mfa.listFactors(),
+  ]);
+  if (assuranceError) throw assuranceError;
+  if (factorError) throw factorError;
+  return { currentLevel: assurance.currentLevel, nextLevel: assurance.nextLevel,
+    factors: (factors?.totp || []).filter((factor) => factor.status === 'verified') };
+}
+
 /** Return only a known page in this app, never an external or sibling destination. */
 export function safeReturnUrl(value, baseHref = globalThis.location?.href || 'http://localhost/') {
   const base = new URL('./', baseHref);
@@ -100,6 +116,7 @@ export function accountUrl(next = 'panel.html', baseHref = globalThis.location?.
 
 export function cloudErrorMessage(error, fallback = 'No se pudo completar la operación. Vuelve a intentarlo.') {
   const message = String(error?.message || '');
+  if (/mfa.*(verification|verify|challenge)|invalid.*(totp|factor|code)/i.test(message)) return 'El código no es válido o ya cambió. Usa el código actual de tu aplicación autenticadora.';
   if (/invalid login credentials/i.test(message)) return 'El correo o la contraseña no coinciden. Revísalos o recupera tu acceso.';
   if (/email not confirmed/i.test(message)) return 'Confirma tu correo antes de entrar. Revisa también la carpeta de correo no deseado.';
   if (/rate limit|too many requests/i.test(message)) return 'Hay demasiados intentos. Espera un momento antes de volver a intentarlo.';

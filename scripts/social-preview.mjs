@@ -1,15 +1,40 @@
 import sharp from 'sharp';
 import { mkdir } from 'node:fs/promises';
+
+// Recurso propio y reproducible; no contiene datos personales.
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-<rect width="1200" height="630" fill="#142536"/><rect x="32" y="32" width="1136" height="566" rx="28" fill="none" stroke="#355064"/>
-<g transform="translate(74 68)" fill="none" stroke="#fd8b54" stroke-width="3"><path d="M0 12 20 0l20 12v25L20 49 0 37zM0 12l20 12 20-12M20 24v25M10 6l20 12v12"/></g>
-<text x="134" y="103" font-family="Arial,sans-serif" font-size="30" font-weight="700" fill="#fff8ed">MoveFlow</text>
-<text x="74" y="214" font-family="Arial,sans-serif" font-size="16" letter-spacing="3" fill="#c1d0d9">MUDANZAS, DE PERSONA A PERSONA</text>
-<text x="70" y="302" font-family="Georgia,serif" font-size="68" fill="#fff8ed">Tu próxima mudanza.</text>
-<text x="70" y="382" font-family="Georgia,serif" font-size="68" font-style="italic" fill="#fd8b54">El trato, contigo.</text>
-<text x="74" y="447" font-family="Arial,sans-serif" font-size="23" fill="#c1d0d9">Tú nos cuentas el plan. Lo acordamos contigo.</text>
-<rect x="74" y="496" width="282" height="54" rx="27" fill="#fd8b54"/><text x="101" y="531" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#142536">Prepara tu solicitud →</text>
-<g transform="translate(838 188)"><path d="M0 149V66L91 0l91 66v153H0Z" fill="#2c485d" stroke="#7b94a5" stroke-width="3"/><path d="M-14 72 91-4l105 76" fill="none" stroke="#d9e4e8" stroke-width="5" stroke-linecap="round"/><path d="M68 219v-72h48v72M29 82h33v33H29zM120 82h33v33h-33z" fill="#e2c9a6"/><rect x="134" y="168" width="88" height="80" rx="3" fill="#fd8b54"/><path d="M172 168h13v28h-13z" fill="#ffd5a9"/><rect x="79" y="207" width="48" height="41" rx="2" fill="#d4a472"/><path d="M99 207h9v15h-9z" fill="#f9ce9d"/><path d="M-20 249h262" stroke="#7b94a5" stroke-width="2"/></g>
+  <rect width="1200" height="630" fill="#142536"/>
+  <circle cx="1186" cy="19" r="354" fill="none" stroke="#455d70"/>
+  <circle cx="1186" cy="19" r="302" fill="none" stroke="#30495e"/>
+  <g transform="translate(62 50)" fill="none" stroke="#fb9a66" stroke-width="3"><path d="M0 12 20 0l20 12v25L20 49 0 37zM0 12l20 12 20-12M20 24v25M10 6l20 12v12"/></g>
+  <text x="121" y="86" font-family="Arial,sans-serif" font-size="33" font-weight="700" fill="#fff8ed">MoveFlow</text>
+  <text x="1127" y="80" text-anchor="end" font-family="Arial,sans-serif" font-size="17" letter-spacing="3" fill="#cfdae1">MUDANZAS</text>
+  <text x="64" y="185" font-family="Arial,sans-serif" font-size="16" letter-spacing="2" fill="#d5dfe4">DE PERSONA A PERSONA</text>
+  <text x="59" y="275" font-family="Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2" fill="#fff8ed">Cambia de casa.</text>
+  <text x="59" y="353" font-family="Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2" fill="#fb9a66">Empieza tranquilo.</text>
+  <text x="64" y="411" font-family="Arial,sans-serif" font-size="23" fill="#cfdae1">Tu plan. Tu asesor. Tu próximo comienzo.</text>
+  <rect x="64" y="460" width="292" height="61" rx="13" fill="#fb9a66"/>
+  <text x="91" y="499" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#142536">Planea tu mudanza</text>
+  <path d="M318 489h15m-6-6 6 6-6 6" stroke="#142536" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="64" y="573" font-family="Arial,sans-serif" font-size="17" fill="#bdccd6">Local · Foránea · Atención personal por WhatsApp</text>
+  <g transform="translate(790 194)">
+    <rect x="0" y="0" width="332" height="334" rx="25" fill="#20394d" stroke="#476073"/>
+    <text x="25" y="39" font-family="Arial,sans-serif" font-size="15" fill="#d3dee5">Un nuevo comienzo</text>
+    <rect x="263" y="20" width="45" height="27" rx="7" fill="#344a59"/>
+    <path d="M274 34h22m-7-6 7 6-7 6" stroke="#fb9a66" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M56 224V138l86-61 86 61v86" fill="#35566c" stroke="#95aab6" stroke-width="2"/>
+    <path d="m44 143 98-73 99 73" fill="none" stroke="#dfebed" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M116 224v-60h49v60" fill="#142536"/>
+    <path d="M77 147h24v28H77zM181 147h24v28h-24z" fill="#e6cfaa"/>
+    <rect x="192" y="193" width="70" height="64" rx="3" fill="#fb9a66"/>
+    <path d="M221 193h12v23h-12z" fill="#ffd4b3"/>
+    <rect x="146" y="224" width="40" height="33" rx="2" fill="#d4a371"/>
+    <path d="M161 224h10v12h-10z" fill="#f7d1a7"/>
+    <path d="M28 258h278" stroke="#7a97a9" stroke-width="2"/>
+    <circle cx="38" cy="297" r="10" fill="#fb9a66"/>
+    <path d="m34 297 3 3 5-6" fill="none" stroke="#142536" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="58" y="302" font-family="Arial,sans-serif" font-size="14" fill="#d3dee5">El trato, contigo.</text>
+  </g>
 </svg>`;
 await mkdir(new URL('../public/', import.meta.url), { recursive: true });
 await sharp(Buffer.from(svg)).png().toFile(new URL('../public/social-preview.png', import.meta.url).pathname);

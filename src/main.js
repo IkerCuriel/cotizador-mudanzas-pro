@@ -1,7 +1,7 @@
 import { ROOMS, FURNITURE, ITEMS, PROPERTY_TYPES, ACCESS_TYPES, CARRY_RANGES } from "./catalog.js";
 import { createRequest, normalizeDraft, migrateLegacyDraft, buildRequestText } from "./request.js";
 import { saveRequest, loadRequests } from "./storage.js";
-import { BUSINESS, buildWhatsAppUrl } from "./config.js";
+import { ADVISORS, getAdvisor, buildAdvisorWhatsAppUrl } from "./config.js";
 import { isCloudConfigured, getSession, getPublicSettings, submitCloudRequest, accountUrl, cloudErrorMessage } from "./cloud.js";
 import { LEGAL_READY } from "./legal-config.js";
 
@@ -18,11 +18,33 @@ const contactLabels = { whatsapp: "WhatsApp", call: "Llamada", either: "Llamada 
 const windowLabels = { anytime: "Cualquier horario", morning: "Mañana", afternoon: "Tarde", evening: "Noche" };
 const answerLabels = { yes: "Sí", no: "No", unknown: "Por confirmar" };
 let modalTrigger;
+let preparedShareMessage = "";
 let cloudState = { session: null, settings: null, sending: false, sentReference: null };
 
 function text(id, value) { const element = document.getElementById(id); if (element) element.textContent = value; }
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[c]);
+}
+function renderAdvisors() {
+  document.getElementById("advisorCards").innerHTML = ADVISORS.map((advisor) => `
+    <article class="advisor-card"><div class="advisor-card__person"><span class="advisor-avatar" aria-hidden="true">${advisor.initials}</span><div><h3>${advisor.name}</h3><p>Asesoría de mudanzas</p></div></div>
+      <p class="advisor-phone">${advisor.displayPhone}</p>
+      <a class="button button--contact" href="${escapeHtml(buildAdvisorWhatsAppUrl(`Hola ${advisor.name.split(" ")[0]}, encontré MoveFlow y me gustaría platicar sobre mi mudanza.`, advisor.id))}" target="_blank" rel="noopener noreferrer">Hablar con ${advisor.name.split(" ")[0]} <span aria-hidden="true">↗</span></a>
+    </article>`).join("");
+  document.getElementById("advisorOptions").innerHTML = ADVISORS.map((advisor) => `
+    <label class="advisor-option"><input type="radio" name="shareAdvisor" value="${advisor.id}" /><span class="advisor-avatar" aria-hidden="true">${advisor.initials}</span><span><strong>${advisor.name}</strong><small>${advisor.displayPhone}</small></span></label>`).join("");
+}
+function updateAdvisorShare(advisorId) {
+  const share = document.getElementById("shareWhatsApp");
+  share.hidden = !advisorId || !state.request;
+  document.getElementById("selectedAdvisorContact").hidden = share.hidden;
+  if (share.hidden) { share.removeAttribute("href"); return; }
+  const advisor = getAdvisor(advisorId);
+  share.href = buildAdvisorWhatsAppUrl(preparedShareMessage, advisor.id);
+  share.textContent = `Enviar ficha a ${advisor.name.split(" ")[0]} por WhatsApp ↗`;
+  text("businessName", advisor.name);
+  text("businessContact", advisor.displayPhone);
+  text("shareFeedback", "Revisa el mensaje en WhatsApp y pulsa enviar para que tu asesor lo reciba.");
 }
 function collectDraft() {
   const fields = Object.fromEntries(new FormData(form));
@@ -311,10 +333,11 @@ function prepareRequest() {
   text("submissionStatus", storageError ? `Ficha preparada, pero no guardada: ${storageError}. Descárgala o cópiala. No se ha enviado al negocio.` : "Ficha guardada en este navegador. Revisa los detalles y elige cómo enviarla al equipo. Prepararla aquí no la envía.");
   const fullMessage = buildRequestText(request);
   const shortMessage = `SOLICITUD DE MUDANZA · ${request.id}\n${summaryEntries(request).filter(([label]) => ["Ruta", "Tipo de mudanza", "Fecha", "Contacto", "Preferencia de contacto"].includes(label)).map(([label, value]) => `${label}: ${value}`).join("\n")}\nInventario: ${request.totals.totalItems} artículos.\nMe gustaría que revisaran mi mudanza para acordar una propuesta. Compartiré la ficha completa por este chat.`;
-  const message = fullMessage.length > 6000 ? shortMessage : fullMessage;
-  const share = document.getElementById("shareWhatsApp");
-  share.href = buildWhatsAppUrl(message);
-  share.textContent = `Enviar al negocio por WhatsApp`;
+  preparedShareMessage = fullMessage.length > 6000 ? shortMessage : fullMessage;
+  document.querySelectorAll('[name="shareAdvisor"]').forEach((radio) => { radio.checked = false; });
+  updateAdvisorShare(null);
+  text("shareFeedback", "");
+  document.querySelector(".prepared-details").open = false;
   if (fullMessage.length > 6000) text("submissionStatus", `${document.getElementById("submissionStatus").textContent} El mensaje se resumió por su extensión; comparte también la ficha completa con Copiar o Descargar.`);
   text("copyFeedback", "");
   cloudState.sentReference = null;
@@ -434,24 +457,34 @@ form.addEventListener("submit", (event) => {
   prepareRequest();
 });
 document.getElementById("closeModal").addEventListener("click", closeModal);
+document.getElementById("advisorOptions").addEventListener("change", (event) => {
+  if (event.target.name === "shareAdvisor") updateAdvisorShare(event.target.value);
+});
+document.getElementById("shareWhatsApp").addEventListener("click", () => {
+  text("shareFeedback", "Continúa en WhatsApp para confirmar el envío. Si también quieres compartirla con el otro asesor, selecciónalo después y confirma un segundo mensaje.");
+});
 document.getElementById("sendCloudRequest").addEventListener("click", sendCloudRequest);
 document.getElementById("copyQuote").addEventListener("click", copyRequest);
 document.getElementById("downloadRequest").addEventListener("click", downloadRequest);
-document.getElementById("printQuote").addEventListener("click", () => window.print());
+document.getElementById("printQuote").addEventListener("click", () => {
+  // Una ficha cerrada en <details> no se imprime en todos los navegadores.
+  const details = document.querySelector(".prepared-details");
+  const wasOpen = details.open; details.open = true;
+  window.print(); details.open = wasOpen;
+});
 modal.addEventListener("click", (event) => { if (event.target === modal) closeModal(); });
 document.addEventListener("keydown", (event) => {
   if (!modal.classList.contains("is-open")) return;
   if (event.key === "Escape") closeModal();
   if (event.key === "Tab") {
-    const controls = [...modal.querySelectorAll("button, a[href]")].filter((control) => !control.disabled && control.getClientRects().length);
+    const controls = [...modal.querySelectorAll("button, a[href], input, summary")].filter((control) => !control.disabled && control.getClientRects().length);
     if (event.shiftKey && document.activeElement === controls[0]) { event.preventDefault(); controls.at(-1).focus(); }
     else if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
   }
 });
 state.rooms = emptyCounts(ROOMS); state.inventory = emptyCounts(ITEMS);
+renderAdvisors();
 restoreDraft(); setDefaultDate(); renderRooms(); renderInventory(); showStep(1, false);
 text("currentYear", String(new Date().getFullYear()));
-text("businessContact", BUSINESS.displayPhone);
-text("businessName", BUSINESS.name);
 if (location.hash === "#retomar") showStep(4);
 loadCloudState();

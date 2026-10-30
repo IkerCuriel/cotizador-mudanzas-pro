@@ -10,5 +10,10 @@ dist
 .wrangler/
 supabase/.temp/
 supabase/.branches/
+backups/
+*.bundle
+*.dump
+*.backup
+.env.push
 node_modules/
 dist/

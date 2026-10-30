@@ -25,6 +25,8 @@ El piloto no cobra suscripciones. La futura membresía será para los **mudancer
 
 El servidor debe aplicar los permisos. Mostrar u ocultar botones no protege una solicitud. Nadie puede concederse un rol administrativo desde el registro público.
 
+Los asesores del piloto son **Tere Curiel (55 2906 1098)** y **Marco Curiel (56 1449 2452)**. La ficha local permite elegir destinatario de WhatsApp. La recepción dentro de cuentas, cuando se active, asigna la solicitud a los miembros aprobados del equipo familiar. Proveedores y administradores requieren un segundo factor para consultar información de clientes.
+
 ## Desarrollo local en VS Code
 
 1. Abre en VS Code `MoveFlow.code-workspace` o la carpeta completa `cotizador-mudanzas-pro`, no únicamente `docs/`.
@@ -61,12 +63,20 @@ Incluye ruta local o foránea, modalidad directa o compartida, domicilios y fech
 
 Los volúmenes y pesos del catálogo describen la carga. Son estimaciones que revisa la empresa, no una tarifa. La ficha no confirma reserva, seguro ni contrato.
 
-El WhatsApp del negocio familiar es **55 2906 1098**, configurado como `525529061098` en `src/config.js`. Un enlace de WhatsApp prepara el mensaje: la persona aún debe enviarlo. Las notificaciones implementadas para cuentas pertenecen al panel; los avisos por correo, SMS o WhatsApp requieren una integración adicional.
+Los contactos se configuran en `src/config.js`. Un enlace de WhatsApp prepara el mensaje para la persona elegida: el cliente aún debe enviarlo. Los avisos del panel y el canal Web Push están implementados, pero no activos en producción. Web Push requiere la función de servidor, sus claves, el disparador y el permiso de cada dispositivo; no es un envío automático de WhatsApp ni SMS.
 
 ## Documentación vigente
 
 - [Lanzamiento, infraestructura, cuentas y costos](docs/lanzamiento.md).
 - [Operación, privacidad y preparación comercial](docs/operacion-y-privacidad.md).
+- [Manual del propietario: publicar, pausar y recuperar](docs/control-y-recuperacion.md).
+- [Seguridad, invitaciones y segundo factor](docs/seguridad-y-cuentas.md).
+- [Avisos al teléfono: activación y comprobación](docs/notificaciones-telefono.md).
+- [Marca, dominio, software y pendientes legales](docs/marco-legal-y-titularidad.md).
+- [Condiciones para los profesionales](docs/condiciones-proveedores.md).
+- [Reportar un problema de seguridad](SECURITY.md).
+
+Para preparar una pausa usa `npm run build:maintenance`; para respaldar el código guardado, `npm run backup:source`. Ninguno cambia Internet por sí solo. El flujo manual de Cloudflare en GitHub está preparado como alternativa; requiere conectar tu propia cuenta y no sustituye automáticamente el sitio actual de Sites.
 
 `docs/flujo-solicitudes.md`, `docs/tarifas.md`, las capturas anteriores y el panel de almacenamiento local describen etapas previas. Son historial, no evidencia de recepción remota o servicios activos. No importar datos reales de pruebas a producción sin revisar su procedencia y autorización.
 

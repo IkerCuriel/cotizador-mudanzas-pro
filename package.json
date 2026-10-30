@@ -10,7 +10,9 @@
     "preview": "vite preview --host 0.0.0.0",
     "test:db": "node --test tests/backend.integration.test.js",
     "social:preview": "node scripts/social-preview.mjs",
-    "check:launch": "node scripts/check-launch.mjs"
+    "check:launch": "node scripts/check-launch.mjs",
+    "build:maintenance": "node scripts/build-maintenance.mjs",
+    "backup:source": "node scripts/backup-source.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.13",

@@ -1,0 +1,26 @@
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { resolve, basename } from 'node:path';
+import { createHash } from 'node:crypto';
+
+const root = process.cwd();
+const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+if (JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')).name !== 'cotizador-mudanzas-pro') throw new Error('Ejecuta desde el proyecto MoveFlow.');
+if (git('status', '--porcelain')) throw new Error('Guarda los cambios en un commit antes del respaldo; así no se omite trabajo sin guardar.');
+if (process.argv.length > 4 || (process.argv[2] && process.argv[2] !== '--output') || (process.argv[2] && !process.argv[3])) throw new Error('Uso: npm run backup:source -- [--output /ruta/nueva]');
+const sha = git('rev-parse', 'HEAD');
+const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+const output = resolve(process.argv[3] || resolve(root, 'backups', 'moveflow-' + stamp));
+if (existsSync(output)) throw new Error('La carpeta de destino ya existe. Elige una nueva para no sobrescribir un respaldo.');
+mkdirSync(output, { recursive: true, mode: 0o700 });
+const bundle = resolve(output, 'moveflow-source.bundle');
+const archive = resolve(output, 'moveflow-source.tar.gz');
+git('bundle', 'create', bundle, '--all');
+git('bundle', 'verify', bundle);
+git('archive', '--format=tar.gz', '--prefix=moveflow/', '--output=' + archive, sha);
+const checksums = [bundle, archive].map(file => createHash('sha256').update(readFileSync(file)).digest('hex') + '  ' + basename(file)).join('\n') + '\n';
+writeFileSync(resolve(output, 'SHA256SUMS.txt'), checksums);
+writeFileSync(resolve(output, 'respaldo.json'), JSON.stringify({ createdAt: new Date().toISOString(), commit: sha, branch: git('branch', '--show-current'), includes: 'Código e historial Git', excludes: ['Base de datos de clientes', 'Contraseñas y secretos no versionados', 'Configuración del alojamiento', 'Archivos privados externos'], restoreGuide: 'docs/control-y-recuperacion.md' }, null, 2) + '\n');
+writeFileSync(resolve(output, 'LEEME.txt'), 'RESPALDO DE CÓDIGO MOVEFLOW\n\nCommit: ' + sha + '\n\nVerifica SHA256SUMS.txt. Para recuperar historial en una carpeta nueva:\n  git clone moveflow-source.bundle moveflow-restaurado\n  cd moveflow-restaurado\n  npm ci\n  npm test\n  npm run dev\n\nEl repositorio remoto del clon será el archivo del respaldo. Consulta docs/control-y-recuperacion.md antes de volver a conectar GitHub.\n\nEsto NO respalda las cuentas, datos, secretos, DNS o pagos externos a Git. El historial conserva todo lo que se haya versionado, incluidos datos o secretos subidos por error. Guarda los respaldos externos por separado, cifrados, bajo tu control. No subas este respaldo a una página pública.\n');
+console.log('Respaldo verificado: ' + output);
+console.log('Commit: ' + sha + '. No respalda datos o secretos externos a Git; conserva todo lo que se haya versionado en su historial.');

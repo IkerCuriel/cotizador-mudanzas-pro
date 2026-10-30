@@ -8,7 +8,7 @@ values
   ('a0000000-0000-4000-8000-000000000001','rls-a@example.test',now(),'{"role":"superadmin"}'),
   ('a0000000-0000-4000-8000-000000000002','rls-b@example.test',now(),'{}'),
   ('a0000000-0000-4000-8000-000000000003','rls-provider@example.test',now(),'{}');
-update public.profiles set role='provider',provider_status='approved',plan_expires_at=now()+interval '1 day' where id='a0000000-0000-4000-8000-000000000003';
+update public.profiles set role='provider',is_family=true,provider_status='approved',plan_expires_at=now()+interval '1 day' where id='a0000000-0000-4000-8000-000000000003';
 
 insert into public.move_requests(id,reference,owner_id,payload,audience,privacy_version) values
 ('b0000000-0000-4000-8000-000000000001','MF-RLS-TEST','a0000000-0000-4000-8000-000000000001','{"fields":{"phone":"5512345678"},"rooms":{},"inventory":{}}','family','2026-10-30');
@@ -16,7 +16,7 @@ insert into public.request_recipients(request_id,provider_id) values('b0000000-0
 insert into public.notifications(user_id,request_id) values('a0000000-0000-4000-8000-000000000003','b0000000-0000-4000-8000-000000000001');
 
 select set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000001',true);
-select set_config('request.jwt.claims','{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}',true);
 set local role authenticated;
 do $$
 begin
@@ -37,7 +37,7 @@ $$;
 reset role;
 
 select set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000002',true);
-select set_config('request.jwt.claims','{"sub":"a0000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"a0000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}',true);
 set local role authenticated;
 do $$
 begin
@@ -53,7 +53,7 @@ $$;
 reset role;
 
 select set_config('request.jwt.claim.sub','a0000000-0000-4000-8000-000000000003',true);
-select set_config('request.jwt.claims','{"sub":"a0000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"a0000000-0000-4000-8000-000000000003","role":"authenticated","aal":"aal2"}',true);
 set local role authenticated;
 do $$
 begin

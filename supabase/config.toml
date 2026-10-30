@@ -36,3 +36,10 @@ secure_password_change = true
 max_frequency = "1m"
 otp_length = 6
 otp_expiry = 3600
+
+[auth.mfa]
+max_enrolled_factors = 5
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true

@@ -1,12 +1,13 @@
 import './styles.css';
 import './account.css';
 import './dashboard.css';
-import { supabase, isCloudConfigured, getSession, getProfile, accountUrl, cloudErrorMessage } from './cloud.js';
+import { supabase, isCloudConfigured, getSession, getProfile, accountUrl, cloudErrorMessage, getAccountSecurity, requiresSecondFactor } from './cloud.js';
 import { buildRequestText } from './request.js';
 import { BUSINESS, buildWhatsAppUrl } from './config.js';
+import { getPushAvailability, getPushDeviceState, enablePushNotifications, disablePushNotifications } from './push-notifications.js';
 
 const statusLabels = { submitted: 'Recibida', contacted: 'Contactado', negotiating: 'En conversación', completed: 'Finalizada', cancelled: 'Cancelada' };
-const roleLabels = { applicant: 'Cliente', provider: 'Negocio de mudanzas', admin: 'Administración', superadmin: 'Superadministración' };
+const roleLabels = { applicant: 'Cliente', provider: 'Asesor de mudanzas', admin: 'Administración', superadmin: 'Superadministración' };
 const providerLabels = { pending: 'Pendiente de revisión', approved: 'Aprobado', suspended: 'Suspendido', expired: 'Vigencia vencida' };
 const byId = (id) => document.getElementById(id);
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
@@ -15,6 +16,8 @@ let loadGeneration = 0;
 let accessExpiryTimer = null;
 let hasUnsavedEdits = false;
 let activeUserId = null;
+let assuranceLevel = 'aal1';
+let pushBusy = false;
 const pageSize = 20;
 const isAdmin = () => ['admin', 'superadmin'].includes(state.profile?.role);
 const isSuperadmin = () => state.profile?.role === 'superadmin';
@@ -56,6 +59,9 @@ function getCurrentRequest() { return state.requests.find((request) => request.i
 function clearPrivateData() {
   loadGeneration += 1;
   activeUserId = null;
+  assuranceLevel = 'aal1';
+  byId('phone-notifications').hidden = true;
+  byId('phone-notification-status').textContent = '';
   state.loading = false;
   hasUnsavedEdits = false;
   if (accessExpiryTimer) clearTimeout(accessExpiryTimer);
@@ -132,7 +138,7 @@ function renderProviders() {
   if (!isAdmin()) { byId('cloud-providers').innerHTML = ''; return; }
   byId('cloud-providers').innerHTML = state.providers.length ? state.providers.map((profile) => {
     const status = effectiveProviderStatus(profile);
-    return `<article class="dashboard-provider"><header><div><h3>${esc(profile.company_name || profile.display_name || 'Negocio sin nombre')}</h3><p>${esc(profile.display_name)}${profile.phone ? ` · ${esc(profile.phone)}` : ''}</p></div><span class="dashboard-status dashboard-status--${esc(status)}">${esc(providerLabels[status] || 'Por revisar')}</span></header><p class="cloud-small">Plan piloto · ${profile.plan_expires_at ? `vigencia al ${esc(formatDate(profile.plan_expires_at))}` : 'sin vigencia aprobada'}${profile.is_family ? ' · negocio familiar' : ''}</p><form class="cloud-form" data-provider-form="${esc(profile.id)}"><label>Estado de acceso<select name="status">${['pending', 'approved', 'suspended'].map((option) => `<option value="${option}"${option === profile.provider_status ? ' selected' : ''}>${providerLabels[option]}</option>`).join('')}</select></label><label>Vigencia hasta<input type="date" name="expires" value="${esc(dateValue(profile.plan_expires_at))}" /><small>Para aprobar, elige una fecha futura dentro de los próximos 366 días.</small></label><label class="cloud-check"><input type="checkbox" name="is_family"${profile.is_family ? ' checked' : ''}${isSuperadmin() ? '' : ' disabled'} /><span>Es el negocio familiar que recibe solicitudes directas${isSuperadmin() ? '' : ' (lo asigna superadministración)'}</span></label><button type="submit" class="button button--secondary">Guardar acceso</button></form></article>`;
+    return `<article class="dashboard-provider"><header><div><h3>${esc(profile.company_name || profile.display_name || 'Negocio sin nombre')}</h3><p>${esc(profile.display_name)}${profile.phone ? ` · ${esc(profile.phone)}` : ''}</p></div><span class="dashboard-status dashboard-status--${esc(status)}">${esc(providerLabels[status] || 'Por revisar')}</span></header><p class="cloud-small">Plan piloto · ${profile.plan_expires_at ? `vigencia al ${esc(formatDate(profile.plan_expires_at))}` : 'sin vigencia aprobada'}${profile.is_family ? ' · negocio familiar' : ''}</p><form class="cloud-form" data-provider-form="${esc(profile.id)}"><label>Estado de acceso<select name="status">${['pending', 'approved', 'suspended'].map((option) => `<option value="${option}"${option === profile.provider_status ? ' selected' : ''}>${providerLabels[option]}</option>`).join('')}</select></label><label>Vigencia hasta<input type="date" name="expires" value="${esc(dateValue(profile.plan_expires_at))}" /><small>Para aprobar, elige una fecha futura dentro de los próximos 366 días.</small></label><label class="cloud-check"><input type="checkbox" name="is_family"${profile.is_family ? ' checked' : ''}${isSuperadmin() ? '' : ' disabled'} /><span>Pertenece al equipo familiar que recibe solicitudes directas${isSuperadmin() ? '' : ' (lo asigna superadministración)'}</span></label><button type="submit" class="button button--secondary">Guardar acceso</button></form></article>`;
   }).join('') : '<div class="dashboard-empty-small"><strong>Aún no hay negocios registrados.</strong>Las solicitudes de acceso aparecerán aquí cuando se complete el registro.</div>';
 }
 function renderUsers() {
@@ -176,6 +182,17 @@ async function refresh(announce = false) {
     const profile = await getProfile(session);
     if (generation !== loadGeneration) return;
     if (!Object.hasOwn(roleLabels, profile?.role)) throw new Error('Tu cuenta todavía no tiene un perfil disponible. Contacta al equipo.');
+    let currentAssurance = 'aal1';
+    if (requiresSecondFactor(profile)) {
+      const security = await getAccountSecurity();
+      if (generation !== loadGeneration) return;
+      if (security.currentLevel !== 'aal2') {
+        clearPrivateData();
+        gate('Protege tu acceso al equipo.', 'Confirma tu segundo factor antes de consultar información de clientes.', '<a class="button button--primary" href="./cuenta.html?mode=security">Verificar mi acceso</a>');
+        return;
+      }
+      currentAssurance = security.currentLevel;
+    }
     const admin = ['admin', 'superadmin'].includes(profile.role);
     const [rows, notifications, providers, users] = await Promise.all([
       queryRows(supabase.from('move_requests').select('id,reference,owner_id,payload,audience,status,created_at').order('created_at', { ascending: false }).range(state.page * pageSize, state.page * pageSize + pageSize)),
@@ -185,11 +202,13 @@ async function refresh(announce = false) {
     ]);
     if (generation !== loadGeneration) return;
     state.session = session; state.profile = profile;
+    assuranceLevel = currentAssurance;
     state.hasNext = rows.length > pageSize; state.requests = rows.slice(0, pageSize);
     state.notifications = notifications; state.providers = providers; state.users = users;
     if (!state.requests.some((request) => request.id === state.selectedId)) state.selectedId = state.requests[0]?.id || null;
     hasUnsavedEdits = false;
     render();
+    renderPhoneNotifications();
     if (announce) notify('Información actualizada.');
   } catch (error) {
     if (generation !== loadGeneration) return;
@@ -219,6 +238,53 @@ async function mutate(element, action, success) {
   finally { element.dataset.busy = 'false'; buttons.forEach((button) => { button.disabled = false; }); }
 }
 async function rpc(name, args) { const { data, error } = await supabase.rpc(name, args); if (error) throw error; return data; }
+
+async function renderPhoneNotifications() {
+  const generation = loadGeneration;
+  const section = byId('phone-notifications');
+  section.hidden = !requiresSecondFactor(state.profile);
+  if (section.hidden || pushBusy) return;
+  const availability = getPushAvailability({ profile: state.profile, assuranceLevel });
+  byId('enable-phone-notifications').disabled = !availability.canEnable;
+  byId('disable-phone-notifications').hidden = true;
+  byId('phone-notification-status').textContent = availability.reason || 'Los avisos se activan solo si tú das permiso en este dispositivo.';
+  if (!availability.configured || !availability.supported || !availability.eligible) return;
+  try {
+    const device = await getPushDeviceState();
+    if (generation !== loadGeneration || pushBusy) return;
+    byId('enable-phone-notifications').disabled = device.active || !availability.canEnable;
+    byId('disable-phone-notifications').hidden = !device.subscribed;
+    if (device.active) byId('phone-notification-status').textContent = 'Este dispositivo está registrado para recibir avisos. Revisa también el panel.';
+  } catch (error) {
+    if (generation === loadGeneration) byId('phone-notification-status').textContent = error.message;
+  }
+}
+async function changePhoneNotifications(enable) {
+  if (pushBusy || !state.profile) return;
+  pushBusy = true;
+  const generation = loadGeneration;
+  byId('enable-phone-notifications').disabled = true;
+  byId('disable-phone-notifications').disabled = true;
+  try {
+    const result = enable
+      ? await enablePushNotifications({ profile: state.profile, assuranceLevel })
+      : await disablePushNotifications();
+    if (generation !== loadGeneration) return;
+    byId('phone-notification-status').textContent = enable ? 'Dispositivo registrado. Los próximos avisos abrirán tu panel protegido.' : result.serverPending ? 'El navegador se desactivó; falta confirmar la revocación en el servidor.' : 'Avisos desactivados en este dispositivo.';
+    byId('disable-phone-notifications').hidden = !enable;
+  } catch (error) {
+    if (generation === loadGeneration) byId('phone-notification-status').textContent = error.message;
+  } finally {
+    pushBusy = false;
+    if (generation === loadGeneration) {
+      byId('disable-phone-notifications').disabled = false;
+      const availability = getPushAvailability({ profile: state.profile, assuranceLevel });
+      byId('enable-phone-notifications').disabled = !availability.canEnable;
+    }
+  }
+}
+byId('enable-phone-notifications').addEventListener('click', () => changePhoneNotifications(true));
+byId('disable-phone-notifications').addEventListener('click', () => changePhoneNotifications(false));
 
 document.querySelectorAll('[data-panel]').forEach((button) => button.addEventListener('click', () => setTab(button.dataset.panel)));
 byId('refresh-dashboard').addEventListener('click', () => refresh(true));
@@ -304,6 +370,7 @@ byId('dashboard-signout').addEventListener('click', async () => {
   const button = byId('dashboard-signout');
   button.disabled = true;
   try {
+    await disablePushNotifications().catch(() => { /* The server still checks access before each delivery. */ });
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     clearPrivateData();

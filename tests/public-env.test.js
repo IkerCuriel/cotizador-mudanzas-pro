@@ -18,3 +18,13 @@ test('public configuration and server-only environment names coexist without exp
     GITHUB_TOKEN: 'server-only-canary', CF_PAGES_URL: 'https://example.pages.dev',
   }));
 });
+
+test('a private VAPID key cannot be bundled as the public push key', () => {
+  const privateKey = 'sensitive-canary-' + 'a'.repeat(27);
+  assert.throws(() => assertPublicEnvironment({ VITE_WEB_PUSH_PUBLIC_KEY: privateKey }), error => {
+    assert.ok(!error.message.includes(privateKey));
+    return /VAPID pública/.test(error.message);
+  });
+  assert.throws(() => assertPublicEnvironment({ VITE_WEB_PUSH_ENABLED: 'true' }), /VAPID pública/);
+  assert.doesNotThrow(() => assertPublicEnvironment({ VITE_WEB_PUSH_ENABLED: 'true', VITE_WEB_PUSH_PUBLIC_KEY: 'B'.repeat(87), VAPID_PRIVATE_KEY: privateKey }));
+});

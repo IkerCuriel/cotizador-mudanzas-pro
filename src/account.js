@@ -1,12 +1,14 @@
 import './styles.css';
 import './account.css';
-import { supabase, isCloudConfigured, getSession, getProfile, safeReturnUrl, cloudErrorMessage } from './cloud.js';
+import { supabase, isCloudConfigured, getSession, getProfile, safeReturnUrl, cloudErrorMessage, getAccountSecurity, requiresSecondFactor } from './cloud.js';
 import { BUSINESS, buildWhatsAppUrl } from './config.js';
 import { LEGAL, LEGAL_READY } from './legal-config.js';
+import { disablePushNotifications } from './push-notifications.js';
 
 const params = new URLSearchParams(location.search);
 const returnUrl = safeReturnUrl(params.get('next'));
-const recoveryFromUrl = params.get('mode') === 'recovery' || new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery';
+const invitationMode = params.get('mode') === 'invite';
+const recoveryFromUrl = invitationMode || params.get('mode') === 'recovery' || new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery';
 const intentKey = 'moveflow-account-interest';
 const providerLanding = location.hash === '#proveedor';
 let recoveryMode = recoveryFromUrl;
@@ -16,6 +18,9 @@ let busy = false;
 let navigating = false;
 let accountGeneration = 0;
 let activeUserId = null;
+let accountSecurity = null;
+let enrollmentId = null;
+let securityView = params.get('mode') === 'security';
 
 const byId = (id) => document.getElementById(id);
 function show(id, visible) { byId(id).hidden = !visible; }
@@ -44,6 +49,8 @@ function setView(view, clearFeedback = true) {
   show('account-session', false);
   show('provider-onboarding', false);
   show('update-password-form', false);
+  show('account-security', false);
+  clearEnrollment();
   for (const name of ['login', 'register', 'recover']) show(`${name}-form`, name === view);
   byId('account-title').textContent = view === 'register' ? 'Haz espacio para lo que viene.' : view === 'recover' ? 'Recupera tu acceso.' : 'Qué gusto verte por aquí.';
   byId('account-intro').textContent = view === 'register' ? 'Crea tu cuenta y confirma tu correo para empezar.' : view === 'recover' ? 'Volver a entrar empieza con tu correo.' : 'Entra para consultar tus solicitudes.';
@@ -54,15 +61,20 @@ function setView(view, clearFeedback = true) {
   });
 }
 function hideAccountSections() {
-  ['account-auth', 'account-session', 'provider-onboarding', 'update-password-form'].forEach((id) => show(id, false));
+  ['account-auth', 'account-session', 'provider-onboarding', 'update-password-form', 'account-security'].forEach((id) => show(id, false));
 }
 function showPasswordForm() {
   hideAccountSections();
   show('update-password-form', true);
+  show('invite-consent', invitationMode);
+  byId('invite-consent-check').required = invitationMode;
+  byId('password-form-title').textContent = invitationMode ? 'Crea tu contraseña personal.' : 'Elige una nueva contraseña.';
+  byId('password-form-intro').textContent = invitationMode ? 'Tu invitación es individual. Elige una contraseña que solo tú conozcas.' : 'Después del cambio cerrarás las sesiones y entrarás con la nueva contraseña.';
 }
 function renderSession() {
   hideAccountSections();
   if (recoveryMode) { showPasswordForm(); return; }
+  if (requiresSecondFactor(profile) && (accountSecurity?.currentLevel !== 'aal2' || securityView)) { renderSecurity(); return; }
   const intent = getIntent();
   const providerInterest = intent.interest === 'provider' || session?.user.user_metadata?.interest === 'provider';
   if (profile?.role === 'applicant' && providerInterest) {
@@ -96,9 +108,12 @@ async function loadSession(redirect = false) {
   const currentProfile = await getProfile(session);
   if (generation !== accountGeneration) return;
   profile = currentProfile;
+  const security = requiresSecondFactor(profile) ? await getAccountSecurity() : null;
+  if (generation !== accountGeneration) return;
+  accountSecurity = security;
   // Registration metadata is only a convenience for editable contact fields.
   // Roles and provider access always come from the protected profile row.
-  if (!profile.display_name && session.user.user_metadata?.display_name) {
+  if (!requiresSecondFactor(profile) && !profile.display_name && session.user.user_metadata?.display_name) {
     const metadata = session.user.user_metadata;
     const { error } = await supabase.from('profiles').update({
       display_name: String(metadata.display_name).trim().slice(0, 100),
@@ -113,7 +128,7 @@ async function loadSession(redirect = false) {
   }
   renderSession();
   const needsProviderOnboarding = !byId('provider-onboarding').hidden;
-  if (redirect && !recoveryMode && !needsProviderOnboarding && !navigating) {
+  if (redirect && !recoveryMode && !needsProviderOnboarding && byId('account-security').hidden && !navigating) {
     navigating = true;
     location.assign(returnUrl);
   }
@@ -138,6 +153,73 @@ function localRedirect(mode) {
   url.searchParams.set('next', returnUrl);
   return url.href;
 }
+
+function clearEnrollment() {
+  enrollmentId = null;
+  byId('mfa-qr').removeAttribute('src');
+  byId('mfa-secret').textContent = '';
+  byId('mfa-verify-form').reset();
+  show('mfa-enrollment', false);
+}
+function renderSecurity() {
+  hideAccountSections();
+  show('account-security', true);
+  const verified = accountSecurity?.currentLevel === 'aal2';
+  const factors = accountSecurity?.factors || [];
+  byId('mfa-title').textContent = verified ? 'Tu acceso tiene doble protección.' : factors.length ? 'Confirma que eres tú.' : 'Protege tu cuenta del equipo.';
+  byId('mfa-intro').textContent = verified ? 'Puedes consultar el panel. Conserva un respaldo seguro de tu autenticador para recuperar el acceso.' : factors.length ? 'Escribe el código de tu aplicación autenticadora. Cambia cada pocos segundos.' : 'Activa una aplicación autenticadora para consultar datos de clientes. Este paso es obligatorio para asesores, administradores y superusuario.';
+  show('mfa-start', !factors.length && !enrollmentId);
+  show('mfa-verify-form', !verified && (factors.length > 0 || !!enrollmentId));
+  show('mfa-continue', verified);
+  byId('mfa-continue').href = returnUrl;
+  byId('mfa-factor').replaceChildren(...factors.map((factor) => {
+    const option = document.createElement('option'); option.value = factor.id; option.textContent = factor.friendly_name || 'Mi autenticador'; return option;
+  }));
+  show('mfa-factor-label', !enrollmentId && factors.length > 1);
+}
+byId('mfa-start').addEventListener('click', async () => {
+  if (busy) return;
+  const currentUser = session?.user.id;
+  const button = byId('mfa-start'); button.disabled = true; busy = true; notify();
+  try {
+    // Remove only abandoned, unverified factors so retries never remove an active authenticator.
+    const { data: factors, error: listError } = await supabase.auth.mfa.listFactors();
+    if (listError) throw listError;
+    for (const factor of factors.all || []) {
+      if (factor.factor_type === 'totp' && factor.status === 'unverified') {
+        const { error } = await supabase.auth.mfa.unenroll({ factorId: factor.id }); if (error) throw error;
+      }
+    }
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Mi autenticador MoveFlow' });
+    if (error) throw error;
+    if (!session || session.user.id !== currentUser) return;
+    enrollmentId = data.id;
+    const qr = data.totp?.qr_code || '';
+    if (!qr.startsWith('data:image/svg+xml')) throw new Error('No pudimos preparar el código de tu autenticador. Intenta nuevamente.');
+    byId('mfa-qr').src = qr;
+    byId('mfa-secret').textContent = data.totp.secret;
+    renderSecurity(); show('mfa-enrollment', true);
+  } catch (error) { notify(cloudErrorMessage(error), true); }
+  finally { busy = false; button.disabled = false; }
+});
+byId('mfa-verify-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  submit(event.target, async (data) => {
+    const factorId = enrollmentId || byId('mfa-factor').value;
+    const code = String(data.get('code') || '').replace(/\s/g, '');
+    if (!factorId || !/^\d{6}$/.test(code)) throw new Error('Escribe los 6 dígitos de tu autenticador.');
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
+    if (error) throw error;
+    clearEnrollment();
+    securityView = true;
+    await loadSession(false);
+    notify('Segundo factor confirmado. Ya puedes entrar al panel.');
+  });
+});
+byId('mfa-signout').addEventListener('click', async () => {
+  try { await disablePushNotifications().catch(() => {}); const { error } = await supabase.auth.signOut(); if (error) throw error; clearEnrollment(); session = null; profile = null; accountSecurity = null; setView('login'); }
+  catch (error) { notify(cloudErrorMessage(error), true); }
+});
 
 document.querySelectorAll('[data-account-view]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.accountView)));
 byId('account-interest').addEventListener('change', (event) => {
@@ -199,15 +281,24 @@ byId('recover-form').addEventListener('submit', (event) => {
 byId('update-password-form').addEventListener('submit', (event) => {
   event.preventDefault();
   submit(event.target, async (data) => {
+    if (invitationMode && (!LEGAL_READY || data.get('inviteConsent') !== 'on')) throw new Error('Revisa y acepta el aviso vigente antes de activar tu invitación.');
     const password = matchingPasswords(data);
     if (!await getSession()) throw new Error('Tu sesión terminó. Solicita otro enlace para recuperar el acceso.');
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
+    if (invitationMode) {
+      const { error: consentError } = await supabase.rpc('accept_account_privacy', { p_privacy_version: LEGAL.version });
+      if (consentError) throw consentError;
+    }
+    await disablePushNotifications().catch(() => {});
+    const { error: signoutError } = await supabase.auth.signOut({ scope: 'global' });
+    if (signoutError) throw signoutError;
     recoveryMode = false;
     event.target.reset();
     history.replaceState(null, '', new URL('cuenta.html', location.href).pathname);
-    await loadSession(false);
-    notify('Contraseña actualizada. Ya puedes continuar a tu cuenta.');
+    session = null; profile = null; accountSecurity = null;
+    setView('login', false);
+    notify('Contraseña guardada. Entra con tu correo y tu nueva contraseña. Las sesiones anteriores se cerraron.');
   });
 });
 
@@ -218,6 +309,7 @@ byId('provider-onboarding').addEventListener('submit', (event) => {
     if (error) throw error;
     clearIntent();
     profile = await getProfile(session);
+    accountSecurity = await getAccountSecurity();
     renderSession();
     notify('Solicitud de acceso registrada. Podrás recibir mudanzas cuando el negocio sea aprobado y tenga un plan vigente.');
   });
@@ -225,6 +317,7 @@ byId('provider-onboarding').addEventListener('submit', (event) => {
 
 byId('account-signout').addEventListener('click', async () => {
   try {
+    await disablePushNotifications().catch(() => {});
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     session = null;
@@ -253,10 +346,10 @@ if (!isCloudConfigured) {
       recoveryMode = true;
       setTimeout(() => loadSession(false).catch((error) => notify(cloudErrorMessage(error), true)), 0);
     }
-    if (event === 'SIGNED_OUT') { accountGeneration += 1; activeUserId = null; session = null; profile = null; recoveryMode = false; byId('session-name').textContent = ''; byId('session-email').textContent = ''; setView('login', false); }
+    if (event === 'SIGNED_OUT') { accountGeneration += 1; activeUserId = null; session = null; profile = null; accountSecurity = null; clearEnrollment(); recoveryMode = false; byId('session-name').textContent = ''; byId('session-email').textContent = ''; setView('login', false); }
     if (event === 'SIGNED_IN' && nextSession?.user.id) {
       if (activeUserId && nextSession.user.id !== activeUserId) {
-        accountGeneration += 1; activeUserId = nextSession.user.id; session = null; profile = null; recoveryMode = false;
+        accountGeneration += 1; activeUserId = nextSession.user.id; session = null; profile = null; accountSecurity = null; clearEnrollment(); recoveryMode = false;
         byId('session-name').textContent = ''; byId('session-email').textContent = '';
         hideAccountSections(); show('account-loading', true);
         setTimeout(() => loadSession(false).catch((error) => notify(cloudErrorMessage(error), true)), 0);

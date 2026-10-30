@@ -1,6 +1,8 @@
 # Backend de cuentas y solicitudes
 
-Se implementó Supabase Auth + PostgreSQL con permisos en la base de datos. La página usa únicamente la URL y la clave pública de Supabase; no requiere ni debe incluir una clave `service_role`. La migración no publica servicios, crea cuentas reales ni envía mensajes por sí sola.
+Se implementó Supabase Auth + PostgreSQL con permisos en la base de datos. La página usa únicamente la URL y la clave pública de Supabase; no requiere ni debe incluir una clave `service_role`. **La nube de producción, las cuentas y los avisos al teléfono siguen pendientes de activación.** Las migraciones no publican servicios, crean cuentas reales ni envían mensajes por sí solas.
+
+Aplicar en orden `202610300001_platform.sql` (cuentas y solicitudes), `202610300002_family_team_security.sql` (varios asesores familiares y segundo factor) y `202610300003_push_notifications.sql` (dispositivos y cola de avisos). No volver a ejecutar migraciones ya aplicadas ni reinicializar una base con datos reales.
 
 ## Qué funciona al conectar Supabase
 
@@ -9,10 +11,11 @@ Se implementó Supabase Auth + PostgreSQL con permisos en la base de datos. La p
 - Solicitudes privadas del usuario y bandeja de las empresas a las que se asignaron.
 - Notificaciones dentro del panel guardadas en la misma transacción que la solicitud.
 - Aprobación manual de empresas con plan piloto gratuito y fecha de vencimiento.
-- Administradores y superusuario con permisos comprobados en el servidor.
+- Asesores familiares con cuentas individuales: una solicitud nueva puede asignarse a Tere y Marco si ambos están aprobados y vigentes.
+- Segundo factor obligatorio para asesores, administradores y superusuario, comprobado por RLS y funciones de servidor mediante `aal2`.
 - Límites de cinco solicitudes por diez minutos y veinte por día por cuenta verificada.
 
-No hay pagos, suscripciones cobradas, correo de novedades, notificaciones push ni mensajes automáticos a WhatsApp. La renovación del piloto es manual; no equivale a cobrar una suscripción. La notificación persiste en el panel aunque el destinatario esté desconectado, pero no despierta el teléfono.
+No hay pagos, suscripciones cobradas, correo de novedades ni mensajes automáticos a WhatsApp. La renovación del piloto es manual; no equivale a cobrar una suscripción. Las notificaciones persisten en el panel. El canal **Web Push está preparado y apagado por defecto**: requiere claves de servidor, función, webhook, reintentos y permiso de cada dispositivo. Su implementación no demuestra entrega real ni inmediata; seguir la [guía de avisos al teléfono](notificaciones-telefono.md).
 
 ## Entorno local
 
@@ -22,7 +25,7 @@ No hay pagos, suscripciones cobradas, correo de novedades, notificaciones push n
 4. Copiar la URL y la clave pública locales a `.env.local` con los nombres `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. Revisar `.env.example` para el resto de la configuración.
 5. Abrir la aplicación, registrarse y confirmar el correo en el buzón de pruebas de Supabase, normalmente `http://127.0.0.1:54324`.
 
-Las pruebas automáticas no necesitan Docker: `npm test` usa PostgreSQL en WebAssembly (PGlite) para ejecutar la migración y las políticas reales. La simulación se limita a la tabla y la identificación del servicio Auth; no prueba el envío de correo, GoTrue, PostgREST o la infraestructura de Supabase.
+Las pruebas automáticas no necesitan Docker: `npm test` usa PostgreSQL en WebAssembly (PGlite) para ejecutar las migraciones y las políticas reales. La simulación se limita a la tabla y la identificación del servicio Auth; no prueba el envío de correo, GoTrue, PostgREST, la entrega al teléfono o la infraestructura de Supabase.
 
 También puede ejecutarse `supabase/tests/authorization.sql` contra un Supabase local/de pruebas ya migrado:
 
@@ -34,11 +37,11 @@ El archivo abre una transacción, crea usuarios sintéticos, cambia al rol `auth
 
 ## Primer superusuario y negocio familiar
 
-1. Crear la cuenta de Iker, verificar su correo y comprobarla en Authentication > Users. Utilizar el correo confirmado del propietario; **el correo no concede un rol**.
+1. Crear la cuenta del propietario, verificar su correo y comprobarla en Authentication > Users. Utilizar su correo confirmado; **el correo no concede un rol**.
 2. Copiar el UUID de esa cuenta verificada.
 3. Revisar `supabase/bootstrap-owner.sql`, reemplazar el UUID vacío y ejecutarlo en SQL Editor con el rol `postgres`. El archivo se detiene si ya hay un superusuario; no existe un botón público para crear otro.
-4. Abrir otra cuenta para el negocio familiar, confirmar su correo y solicitar el rol de empresa con `join_provider` desde la página. No usar la cuenta de superusuario como cuenta de empresa.
-5. Como superusuario, aprobar la empresa con plan piloto, una fecha de vencimiento y la opción de negocio familiar. Esto configura el destinatario familiar de manera atómica. Los administradores pueden aprobar/vencer planes, pero solo el superusuario puede cambiar cuál es el negocio familiar.
+4. Invitar a Tere y Marco con correos individuales siguiendo [seguridad y cuentas](seguridad-y-cuentas.md). Cada persona acepta el aviso, elige su contraseña, solicita acceso mediante `join_provider` y configura su autenticador. No usar la cuenta de superusuario como cuenta de asesor ni compartir contraseñas.
+5. Como superusuario, verificar el segundo factor y aprobar por separado ambas cuentas con plan piloto, fecha de vencimiento y pertenencia al equipo familiar (`is_family=true`). La migración 002 sustituye el destinatario único anterior por varios miembros. Los administradores pueden aprobar/vencer planes, pero solo el superusuario cambia la pertenencia familiar. Agregar un asesor no le asigna solicitudes anteriores.
 6. Completar nombre y domicilio del responsable, contacto para privacidad, aviso y consentimiento en la página. Revisar los datos reales y las finalidades antes de habilitar recepción.
 7. Solo entonces activar recepción en SQL Editor:
 
@@ -52,7 +55,7 @@ La migración crea `accepting_requests=false`, `network_enabled=false` y `privac
 
 ## Esquema público y contrato del cliente
 
-Todas las lecturas están protegidas por RLS. No usar una clave privilegiada en las consultas del navegador.
+Todas las lecturas están protegidas por RLS. Para el equipo, consultar solicitudes, asignaciones y notificaciones exige `aal2`; se permite leer el perfil propio antes de MFA para configurar el autenticador. Los operadores necesitan el segundo factor para consultar otros perfiles o administrar. No usar una clave privilegiada en las consultas del navegador.
 
 | Tabla | Datos principales | Lectura |
 | --- | --- | --- |
@@ -60,6 +63,7 @@ Todas las lecturas están protegidas por RLS. No usar una clave privilegiada en 
 | `move_requests` | `id` UUID, `reference`, `owner_id`, `payload`, `audience`, `status`, `privacy_version`, fechas | Dueño; operadores; empresa asignada con aprobación y plan vigentes |
 | `request_recipients` | `request_id`, `provider_id`, `created_at` | Operadores; empresa asignada todavía autorizada |
 | `notifications` | `id`, `user_id`, `request_id`, `title`, `read_at`, `created_at` | Solo destinatario; el título no contiene datos del cliente |
+| `push_devices` | Dispositivo, endpoint, claves de suscripción, vigencia | Solo dispositivos propios del equipo con acceso autorizado y segundo factor |
 
 Los campos `role`, `provider_status`, `plan_code`, `plan_expires_at` e `is_family` no se pueden editar directamente desde el navegador. El usuario puede modificar únicamente `display_name`, `phone` y `company_name` de su propio perfil con `profiles.update(...)`. Todas las demás escrituras usan funciones autorizadas.
 
@@ -80,7 +84,7 @@ La referencia `MF-...` es única **por dueño**. Reenviar la misma referencia co
 
 ## Red de empresas y suscripciones futuras
 
-El piloto entrega cada solicitud familiar únicamente a la cuenta familiar vigente. Activar `network_enabled` requiere definir las reglas de la red y actualizar el aviso antes de compartir datos con terceros. El cliente debe elegir `audience='network'` y dar **además** `payload.fields.networkConsent=true`; el consentimiento general no basta. La asignación se realiza en ese momento a las empresas aprobadas con plan vigente. No hay inscripción automática de empresas nuevas en solicitudes antiguas.
+El piloto entrega cada solicitud familiar a los asesores con `is_family=true`, aprobación y vigencia activas en ese momento. Activar `network_enabled` requiere definir las reglas de la red y actualizar el aviso antes de compartir datos con terceros. El cliente debe elegir `audience='network'` y dar **además** `payload.fields.networkConsent=true`; el consentimiento general no basta. La asignación se realiza en ese momento a las empresas aprobadas con plan vigente. No hay inscripción automática de empresas nuevas en solicitudes antiguas. Retirar a un asesor del equipo familiar revoca su acceso a las solicitudes familiares previamente asignadas.
 
 Si un plan vence o se suspende, RLS retira inmediatamente el acceso a los datos de solicitudes. Cancelar una solicitud también retira acceso a las empresas; la plataforma no puede borrar copias que una empresa ya haya recibido. Solicitudes finalizadas o canceladas no se reabren desde el panel.
 
@@ -88,11 +92,13 @@ Para cobrar después: agregar un procesador, verificación de firmas de webhooks
 
 ## Operación y límites
 
+La migración 003 mantiene `private.push_settings.enabled=false`. Los dispositivos se registran mediante RPC, con segundo factor, comprobación de la cuenta y máximo de cinco dispositivos activos. `private.push_outbox` solo se procesa desde el servidor autorizado; no es una bandeja pública. La función revalida permisos, vigencia y pertenencia familiar antes de cada aviso y envía texto genérico, sin información del cliente. El detalle de activación, reintentos, revocación y limitaciones está en [notificaciones al teléfono](notificaciones-telefono.md).
+
 - En el proyecto remoto mantener desactivado el registro público de Supabase Auth hasta completar privacidad y la configuración. El bloqueo de la interfaz no impide llamadas directas a Auth. Las cuentas de preparación pueden crearse de manera administrativa; `enable_signup=true` en el archivo local es para pruebas.
 - Configurar URL de producción y redirecciones permitidas en Supabase Auth. `config.toml` local no configura automáticamente el proyecto remoto.
 - Mantener activada la confirmación por correo. Para registros públicos configurar un proveedor SMTP y protección antiabuso acorde al volumen; no asumir que el correo predeterminado sirve para clientes externos.
 - Revisar copias de seguridad, conservación, atención de derechos de privacidad y eliminación de datos antes de operar. Borrar una cuenta de Auth borra en cascada su perfil, sus solicitudes, asignaciones y notificaciones. Los eventos de auditoría conservan UUID y acción, sin domicilios/teléfonos; deben tener su propia política de conservación.
-- `private.audit_events` registra cambios de rol/acceso, estado y aceptación del aviso de registro. El evento `account_privacy_accepted` guarda la versión vigente y la fecha del servidor; no usa fechas enviadas por el cliente. Cambiar después `user_metadata` no modifica ni elimina esa evidencia. Una invitación administrativa, ausencia de aceptación o versión no coincidente no genera evidencia: no se presume consentimiento. Es un registro de la declaración de aceptación, no una verificación adicional de identidad. Solo operación mediante SQL puede leer esta auditoría; no contiene texto de solicitudes.
+- `private.audit_events` registra cambios de rol/acceso, estado y aceptación del aviso de registro. El evento `account_privacy_accepted` guarda la versión vigente y la fecha del servidor; no usa fechas enviadas por el cliente. Cambiar después `user_metadata` no modifica ni elimina esa evidencia. Enviar una invitación administrativa no genera aceptación: el titular la registra posteriormente mediante `accept_account_privacy` al crear su contraseña. La ausencia de aceptación o una versión no coincidente no se consideran consentimiento. Es un registro de la declaración, no una verificación adicional de identidad. Solo operación mediante SQL puede leer esta auditoría; no contiene texto de solicitudes.
 - Un operador con acceso a SQL o una clave privilegiada puede eludir RLS: proteger esas credenciales y habilitar MFA en las cuentas del proveedor.
 - La aprobación piloto es una decisión del negocio; no representa una verificación de calidad, seguro o garantía sobre la empresa.
 

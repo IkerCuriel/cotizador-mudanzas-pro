@@ -1,85 +1,89 @@
-# Operación, privacidad y preparación comercial
+# Operación y privacidad del piloto
 
-**Borrador de trabajo interno.** Organiza decisiones y pendientes; no sustituye un aviso de privacidad público, un contrato ni la revisión jurídica y fiscal. Las medidas técnicas y las políticas de base de datos no certifican legalidad.
+Estado revisado: **30 de octubre de 2026**. Guía interna. Se complementa con [marco legal y titularidad](./marco-legal-y-titularidad.md), [condiciones para profesionales](./condiciones-proveedores.md) y los avisos públicos. Una página publicada y unas pruebas técnicas correctas no certifican cumplimiento legal.
 
-## Etapa inicial
+## Qué funciona y qué sigue pendiente
 
-El negocio familiar atiende las solicitudes del piloto. El sitio reúne la información para facilitar una conversación; la persona y la empresa acuerdan por separado el servicio, precio y condiciones. No hay tarifa automática, seguro incluido, reserva confirmada ni cobro de membresías.
+La página prepara una ficha local y permite que el solicitante elija enviar su información por WhatsApp a **Tere Curiel (+52 55 2906 1098)** o **Marco Curiel (+52 56 1449 2452)**. Elegir un contacto no envía automáticamente a ambos. Las cuentas y recepción en Supabase requieren configuración externa; las notificaciones automáticas al teléfono y los cobros no están activos.
 
-Cuando se incorpore una red, se distinguirá a la plataforma que conecta oportunidades de la empresa que presta cada mudanza. Escribir «solo somos intermediarios» no elimina por sí mismo obligaciones: el comportamiento real, las ofertas y los contratos deben ser coherentes.
+El nombre de producto es **MoveFlow**. Falta confirmar quién opera la plataforma, quién presta y cobra la mudanza y quién es responsable de los datos. No son necesariamente la misma persona. No inventar razón social, RFC, domicilio, garantías, certificaciones o pólizas.
 
-## Identidad pendiente antes del registro público
+| Pendiente | Qué debe aportar el propietario | Motivo |
+| --- | --- | --- |
+| Identidad del operador | Nombre completo de persona física o razón social exacta | Términos, contacto y responsabilidad |
+| Responsable de datos | Identidad y domicilio real para el aviso | LFPDPPP art. 15 |
+| Canal de privacidad | Correo que se atienda y persona responsable | Derechos ARCO, reclamaciones y privacidad |
+| Prestador de mudanza | Identidad, RFC y datos de contratación del negocio | Presupuesto, contrato y comprobantes |
+| Participación de asesores | Confirmar si Tere y Marco actúan para el mismo responsable | Permisos, confidencialidad y posibles transferencias |
+| Titularidad de infraestructura | Cuentas de GitHub, alojamiento, base de datos, correo y dominio | Control, recuperación y continuidad |
+| Activación de cuentas | Cuenta cloud, remitente de correo y pruebas reales de acceso | No ofrecer un registro que no funciona |
 
-| Dato | Estado |
+**Antes de iniciar pruebas con clientes reales, incluso por WhatsApp, completa el aviso y establece su atención efectiva.** Mientras falta esa información, realiza pruebas con datos ficticios. La obligación de informar no se evita porque el almacenamiento inicial sea local o porque el cliente confirme el envío en otra aplicación. El destinatario debe facilitar su aviso al recabar datos.
+
+La bandera `VITE_PRIVACY_READY` no se debe cambiar solo para retirar un mensaje. Es un control operativo; exige identidad y contacto válidos, pero no comprueba por sí misma cumplimiento. Mantén deshabilitada la recepción remota y las altas cloud hasta completar identidad, procesos y conexión. Antes de activarlas, ajusta también los párrafos de los avisos que describen funciones pendientes.
+
+## Procedimiento diario
+
+1. El asesor confirma recepción y registra la referencia de la solicitud. Una ficha generada todavía no acredita recepción ni contratación.
+2. Confirma qué información necesita; inicialmente basta zona o colonia para evaluar la ruta. Solicita domicilio exacto solo cuando sea necesario. No pidas códigos de acceso a viviendas en formularios abiertos.
+3. Verifica inventario, accesos y maniobras con la persona. No prometas precio definitivo con estimaciones de volumen.
+4. Identifica al prestador y entrega por escrito alcance, precio total, impuestos, fecha, vehículo, personal, extras, anticipos, pago restante, cancelación, responsabilidad y reclamaciones.
+5. Confirma los cambios por escrito antes de cobrar extras. No describas el piloto como seguro incluido, proveedor verificado, contratación garantizada o atención de emergencias permanente.
+6. Al cerrar, conserva únicamente lo justificado. No añadas el teléfono a campañas ni reenvíes la ficha fuera del equipo autorizado.
+
+Cada persona debe usar una cuenta individual. Los perfiles comerciales «Tere Curiel» y «Marco Curiel» describen usuarios; no acreditan quién es el prestador legal. Los teléfonos no son credenciales de acceso. Las contraseñas no deben almacenarse en documentación, repositorios, mensajes compartidos ni código del navegador.
+
+## Consentimiento y destinatarios
+
+El formulario debe enlazar el aviso antes de compartir, explicar qué información saldrá y a quién, y pedir una autorización expresa para la ficha, que puede incluir información patrimonial. La futura difusión a una red y la publicidad requieren elecciones separadas; no deben quedar premarcadas ni condicionar la atención familiar. Conservar versión, fecha, usuario cuando exista y destinatarios de cada envío.
+
+Antes de abrir la red, definir por contrato si cada participante trata datos por instrucciones del operador o como responsable independiente. Esa calificación depende de las funciones reales, no solo del nombre del contrato. Documentar finalidad, destinatarios, comunicaciones del aviso, consentimiento o excepción aplicable, prohibición de reventa y colaboración en derechos e incidentes. **No existe un directorio público de hogares.**
+
+La suscripción compra herramientas y acceso autorizado a oportunidades; no compra la propiedad de las personas ni permiso para usar sus datos sin límites.
+
+## Derechos ARCO y revocación
+
+Proceso a ejecutar por la persona designada:
+
+1. Registrar fecha de recepción, petición y canal seguro de respuesta; asignar un folio interno sin publicar datos.
+2. Verificar identidad o representación de forma proporcional. Solicitar únicamente lo necesario; evitar almacenar una identificación completa si existe una alternativa suficiente.
+3. Localizar datos en mensajes, fichas, base de datos, descargas y destinatarios autorizados. Determinar corrección, entrega, bloqueo, cancelación u oposición que corresponda.
+4. Comunicar la determinación dentro de **20 días hábiles**; ejecutar lo procedente dentro de **15 días hábiles** posteriores. Cualquier ampliación única por periodo igual necesita justificación. Documentar las excepciones y comunicaciones.
+5. Extender los cambios a encargados y destinatarios cuando proceda; no prometer borrado inmediato de registros sujetos a conservación legal ni omitir el tratamiento de respaldos.
+
+Cancelar una solicitud comercial y ejercer cancelación de datos son gestiones diferentes. Recibir un contacto comercial no autoriza publicidad. La revocación no es retroactiva. La legislación actual atribuye competencias en datos de particulares a la Secretaría Anticorrupción y Buen Gobierno; no reutilizar sin revisar formatos antiguos dirigidos al extinto INAI. [LFPDPPP, arts. 2, 7, 14–20, 28–36 y 38; texto con reforma 14-11-2025](https://www.diputados.gob.mx/LeyesBiblio/pdf/LFPDPPP.pdf).
+
+## Conservación y respuesta a incidentes
+
+El responsable debe aprobar una matriz con cada categoría, finalidad, ubicación, acceso, plazo justificado, bloqueo/eliminación y tratamiento de copias. No hay un plazo único de conservación aplicable a todos los datos de una mudanza. No presentar una eliminación automática como activa si solo existe en un documento.
+
+| Categoría | Decisión que falta documentar |
 | --- | --- |
-| Nombre comercial definitivo | Pendiente; MoveFlow es provisional. |
-| Nombre completo o razón social del responsable de los datos | Pendiente de confirmación. |
-| Domicilio del responsable para el aviso | Pendiente de confirmación. |
-| Correo y procedimiento para derechos ARCO | Pendientes; no usar automáticamente el correo personal del propietario. |
-| Nombre e identidad de quien presta cada mudanza | Pendientes de confirmación. |
-| Canal operativo del negocio | WhatsApp 55 2906 1098. |
-| Dominio y proveedores de alojamiento/correo activos | Pendientes de configuración. |
-| Persona que atenderá solicitudes y reclamaciones | Pendiente de designación. |
+| Solicitudes no contratadas | Cuándo deja de ser necesario el seguimiento y cómo se eliminan mensajes y descargas |
+| Mudanzas contratadas | Plazos contractuales, fiscales y de reclamación aplicables al prestador |
+| Cuentas y permisos | Cierre de cuenta, retiro de asignaciones y conservación justificada de evidencias |
+| Consentimientos y auditoría | Evidencia mínima necesaria para atender controversias sin conservar inventarios de más |
+| Respaldos | Acceso, cifrado, caducidad y cómo evitar restaurar datos cuya eliminación procede |
 
-No inventar razón social, domicilio, RFC, inscripción, certificación ni garantía. El teléfono de atención no completa por sí solo todos los datos del responsable.
+Ante un incidente: restringir acceso afectado, revocar sesiones y credenciales comprometidas, preservar evidencia mínima en un lugar privado, determinar alcance, corregir la causa y probar la restauración. Informar de inmediato a las personas afectadas cuando se actualice el supuesto del artículo 19 de la LFPDPPP; no esperar a tener todo reconstruido para evaluar esa obligación. Informar a otros responsables o proveedores según los acuerdos aplicables.
 
-## Referencia normativa de privacidad
+**El código fuente no recupera por sí mismo la base de datos, cuentas, mensajes o secretos.** Los respaldos operativos deben guardarse cifrados fuera del repositorio, con un procedimiento de restauración probado. Los registros técnicos no deben copiar contraseñas ni fichas completas innecesariamente.
 
-La LFPDPPP exige informar identidad y domicilio del responsable, datos tratados, finalidades, límites de uso o divulgación, procedimientos ARCO y cambios del aviso. Debe existir aviso al recabar información, además de medidas de seguridad y confidencialidad. Transferir datos a otros mudanceros requiere analizar finalidad, información y consentimiento aplicable. ARCO contempla respuesta en 20 días hábiles y ejecución procedente en 15 más. Las referencias a autoridades deben ajustarse a la ley actual. [LFPDPPP, arts. 14–20, 28–35; reforma del 14 de noviembre de 2025](https://www.diputados.gob.mx/LeyesBiblio/pdf/LFPDPPP.pdf)
+## Proveedores y mensajería
 
-## Decisiones de producto propuestas
+Alojamiento actual: Sites (OpenAI). Supabase está previsto para cuentas y datos. WhatsApp es un canal elegido por quien comparte. Antes de habilitar cualquier proveedor adicional, registrar servicio, función, datos, ubicación/región, subencargados, condiciones de tratamiento, medidas, exportación y eliminación. No afirmar residencia exclusiva en México sin evidencia.
 
-Estas decisiones operativas requieren revisión e implementación; no son una transcripción de la ley:
+Las notificaciones del panel solo existen cuando la nube está conectada y la solicitud fue aceptada. Para alertas al teléfono hacen falta servicio de mensajería/push, permisos de destinatarios, configuración y pruebas de entrega. Un enlace `wa.me` abre un mensaje para que la persona confirme; no es una notificación automática ni garantiza lectura. No enviar inventarios o domicilios completos en alertas de pantalla bloqueada; preferir referencia y enlace autenticado al expediente.
 
-1. **Finalidad principal:** preparar y atender la mudanza solicitada, administrar la cuenta y mantener su seguimiento.
-2. **Atención familiar:** informar que el negocio familiar recibe la solicitud y por qué canales puede contactar.
-3. **Red de mudanceros:** usar una autorización adicional, separada y desmarcada por defecto, para distribuir oportunidades a otros proveedores aprobados. No incluirla implícitamente en la aceptación del aviso ni en publicidad.
-4. **Publicidad:** si se incorpora, solicitar autorización aparte y permitir retirarla. Un aviso operativo y una campaña comercial tienen propósitos diferentes.
-5. **Trazabilidad:** conservar versión del aviso y condiciones, fecha de aceptación, identidad de cuenta y autorización de distribución. Registrar qué proveedores reciben cada solicitud.
-6. **Exposición mínima:** mostrar solo el resumen necesario. Revelar contacto y domicilios a personas autorizadas que los necesiten para atender el servicio.
-7. **Sin directorio de hogares:** no publicar teléfonos, fechas de ausencia, inventarios ni direcciones de solicitantes en buscadores, tarjetas sociales o páginas abiertas.
+## Lista previa a pruebas con clientes
 
-No habilitar la red hasta concretar destinatarios, asignaciones, términos para proveedores y retirada de autorización. Una membresía concede acceso conforme a estas reglas; no otorga derechos ilimitados sobre los datos.
+- [ ] Identidad, domicilio, contacto de privacidad y prestador confirmados.
+- [ ] Avisos revisados y coherentes con el flujo efectivamente publicado.
+- [ ] Tere y Marco aceptaron confidencialidad, uso permitido y atención de derechos.
+- [ ] Ambos números probaron recepción con datos ficticios y las fichas no se envían sin elección.
+- [ ] Hay persona asignada a reclamaciones y un sustituto.
+- [ ] Se documentaron conservación, proveedores y recuperación.
+- [ ] Si se abren cuentas: verificación de correo, recuperación, permisos y bajas probados en producción con cuentas de prueba.
+- [ ] La publicidad describe funciones reales y evita afirmar disponibilidad o seguridad absolutas.
 
-## Gestión diaria
-
-- Designar quién revisa solicitudes y quién cubre su ausencia.
-- Registrar seguimiento, propuestas y elección sin confundirlos con aceptación contractual o reserva.
-- Acordar por escrito alcance, fechas, importe, maniobras, exclusiones, pago y responsabilidades.
-- Aprobar proveedores antes de asignarles solicitudes; no usar «verificado» sin una comprobación definida.
-- Registrar reclamaciones y correcciones; evitar prometer plazos que el negocio no pueda sostener.
-- Revocar acceso al terminar una colaboración y revisar periódicamente roles y proveedores.
-
-Las notificaciones actuales se consultan en el panel al cargarlo o actualizarlo. No se debe prometer atención inmediata por correo o WhatsApp sin implementar y comprobar esos canales.
-
-## Conservación, derechos y seguridad
-
-Definir una política documentada de conservación: plazo necesario por tipo de dato, personas autorizadas, bloqueo o eliminación y tratamiento de respaldos y obligaciones de conservación. No presentar un plazo arbitrario como requisito legal universal.
-
-El proceso de derechos debe cubrir recepción, verificación proporcional de identidad, seguimiento, respuesta y ejecución. Evitar pedir identificaciones sin necesidad. Al eliminar una cuenta, contemplar solicitudes, asignaciones y datos derivados, con las excepciones legalmente documentadas.
-
-Configurar permisos en el servidor y políticas por fila —RLS—, proteger secretos, limitar administración, conservar registros necesarios y preparar respuesta a incidentes. Probar accesos indebidos con distintos roles. **RLS reduce accesos no autorizados; no reemplaza consentimiento, avisos, contratos ni atención de derechos.**
-
-Revisar condiciones y contratos de Supabase, Cloudflare, correo y procesadores efectivamente utilizados, incluidos países de tratamiento y funciones de cada proveedor. No afirmar que los datos permanecen en México si la infraestructura no lo acredita.
-
-## Planes para mudanceros
-
-El acceso inicial es un **piloto gratuito**, concedido por administración al negocio familiar. No renueva a un plan pagado ni registra tarjetas. Distinguir aprobación de proveedor, rol administrativo y vigencia del acceso: son decisiones diferentes.
-
-Antes de vender una suscripción, definir:
-
-- Beneficios reales: zonas, tipos de oportunidad, herramientas y límites.
-- Precio, moneda, impuestos, frecuencia, fecha de cobro y prueba, si la hubiera.
-- Renovación, cancelación, suspensión por impago, reembolsos y controversias.
-- Uso permitido de los datos: contacto por la mudanza autorizada, confidencialidad, no reventa y cooperación al atender derechos.
-- Tratamiento de las oportunidades abiertas cuando venza el acceso.
-
-La LFPC exige claridad comercial y confidencialidad. El artículo 76 Bis incorpora consentimiento expreso para cargos recurrentes, información de monto, periodicidad y fecha, aviso de renovación con cinco días naturales y cancelación inmediata. Revisar su aplicación al contrato concreto entre plataforma y proveedores. [LFPC vigente, reforma de diciembre de 2025](https://www.diputados.gob.mx/LeyesBiblio/pdf/LFPC.pdf)
-
-La integración de pagos debe verificar eventos en el servidor, evitar duplicados y actualizar acceso por pago, impago o cancelación. Mantener evidencia del consentimiento y comunicaciones. Utilizar el flujo del procesador sin guardar tarjetas en la aplicación.
-
-## Preparación fiscal y comercial
-
-Revisar con un contador actividad, RFC, régimen, impuestos y comprobantes de la plataforma y del negocio de mudanzas. No asumir que un recibo del procesador sustituye el comprobante que corresponda emitir. La identidad de quien cobra y el modelo de ingresos deben coincidir con la operación. [Orientación del SAT sobre actividad empresarial](https://wwwmat.sat.gob.mx/consulta/04950/conoce-el-regimen-de-actividad-empresarial-y-profesional)
-
-Antes del registro público, completar identidad, revisar avisos y condiciones, configurar SMTP y comprobar el recorrido con datos ficticios. Mantener deshabilitadas las altas en Supabase Auth y la recepción en el servidor hasta entonces. Esta preparación no garantiza cumplimiento jurídico futuro ni autoriza seguros, servicios o afirmaciones inexistentes.
+Antes de cobrar planes, completar además el diseño contractual, fiscal y técnico descrito en [marco legal y titularidad](./marco-legal-y-titularidad.md). No se ha realizado inscripción ante autoridades ni certificación de legalidad con esta documentación.

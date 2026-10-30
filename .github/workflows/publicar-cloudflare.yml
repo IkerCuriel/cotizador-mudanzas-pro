@@ -1,0 +1,61 @@
+name: Control manual de publicación (Cloudflare)
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: Publicar la aplicación o sustituirla por mantenimiento
+        required: true
+        type: choice
+        options: [publicar, mantenimiento]
+permissions:
+  contents: read
+concurrency:
+  group: moveflow-production
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Comprobar conexión de publicación
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+        run: |
+          node --input-type=module -e 'if (!process.env.CF_TOKEN || !process.env.CF_ACCOUNT || !/^[a-z0-9-]+$/.test(process.env.CF_PROJECT || "")) { console.error("Falta conectar la cuenta propia de Cloudflare. Consulta docs/control-y-recuperacion.md"); process.exit(1); }'
+      - run: npm ci
+      - if: inputs.accion == 'publicar'
+        run: npm test
+      - name: Compilar la aplicación
+        if: inputs.accion == 'publicar'
+        env:
+          VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_LEGAL_NAME: ${{ vars.VITE_LEGAL_NAME }}
+          VITE_LEGAL_ADDRESS: ${{ vars.VITE_LEGAL_ADDRESS }}
+          VITE_PRIVACY_EMAIL: ${{ vars.VITE_PRIVACY_EMAIL }}
+          VITE_PRIVACY_READY: ${{ vars.VITE_PRIVACY_READY }}
+          VITE_BUSINESS_NAME: ${{ vars.VITE_BUSINESS_NAME }}
+          VITE_WEB_PUSH_ENABLED: ${{ vars.VITE_WEB_PUSH_ENABLED }}
+          VITE_WEB_PUSH_PUBLIC_KEY: ${{ vars.VITE_WEB_PUSH_PUBLIC_KEY }}
+        run: |
+          node --input-type=module -e 'if (!process.env.VITE_SITE_URL) { console.error("Define la URL HTTPS real de Cloudflare para evitar metadatos del alojamiento anterior."); process.exit(1); }'
+          npm run build
+      - name: Preparar página de mantenimiento
+        if: inputs.accion == 'mantenimiento'
+        run: npm run build:maintenance
+      - name: Publicar en tu cuenta de Cloudflare
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main

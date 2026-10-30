@@ -21,19 +21,22 @@ export default defineConfig(({ mode }) => {
   plugins: [{
     name: 'social-preview',
     transformIndexHtml(html, context) {
-      if (!context.filename.endsWith('/index.html')) return html;
-      const tags = [
+      const tags = context.server ? [] : [{
+        tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" }, injectTo: 'head-prepend',
+      }];
+      if (!context.filename.endsWith('/index.html')) return { html, tags };
+      tags.push(
         { tag: 'link', attrs: { rel: 'icon', href: './favicon.svg', type: 'image/svg+xml' }, injectTo: 'head' },
         { tag: 'meta', attrs: { property: 'og:type', content: 'website' }, injectTo: 'head' },
         { tag: 'meta', attrs: { property: 'og:locale', content: 'es_MX' }, injectTo: 'head' },
         { tag: 'meta', attrs: { property: 'og:site_name', content: 'MoveFlow' }, injectTo: 'head' },
-        { tag: 'meta', attrs: { property: 'og:title', content: 'Tu próxima mudanza. El trato, contigo.' }, injectTo: 'head' },
-        { tag: 'meta', attrs: { property: 'og:description', content: 'Cuéntanos tu ruta, tus muebles y lo que necesitas. Acuerda tu mudanza con una persona.' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { property: 'og:title', content: 'MoveFlow | Cambia de casa. Empieza tranquilo.' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { property: 'og:description', content: 'Prepara tu mudanza y conversa con Tere o Marco por WhatsApp. Atención personal para acordar el servicio contigo.' }, injectTo: 'head' },
         { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' }, injectTo: 'head' },
-      ];
+      );
       if (origin) tags.push(
         { tag: 'link', attrs: { rel: 'canonical', href: origin + '/' }, injectTo: 'head' },
-        ...[['og:url', origin + '/'], ['og:image', origin + '/social-preview.png'], ['og:image:width', '1200'], ['og:image:height', '630'], ['og:image:alt', 'MoveFlow. Tu próxima mudanza. El trato, contigo.']].map(([property, content]) => ({ tag: 'meta', attrs: { property, content }, injectTo: 'head' })),
+        ...[['og:url', origin + '/'], ['og:image', origin + '/social-preview.png'], ['og:image:width', '1200'], ['og:image:height', '630'], ['og:image:alt', 'MoveFlow. Cambia de casa. Empieza tranquilo.']].map(([property, content]) => ({ tag: 'meta', attrs: { property, content }, injectTo: 'head' })),
       );
       return { html, tags };
     },

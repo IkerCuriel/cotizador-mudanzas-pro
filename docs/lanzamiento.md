@@ -42,7 +42,7 @@ Sin Supabase configurado, se puede revisar la interfaz y preparar información l
 1. Crea una cuenta y un proyecto en [Supabase](https://supabase.com/dashboard). Guarda la contraseña de base de datos en un gestor de contraseñas.
 2. Elige una región considerando a los usuarios y el tratamiento de datos por proveedores externos.
 3. Mantén **deshabilitados los nuevos registros públicos** en la configuración de Auth mientras se preparan SMTP y los avisos. El bloqueo visual del formulario no reemplaza esta configuración.
-4. Aplica `supabase/migrations/202610300001_platform.sql` primero en una base de prueba. Revisa el resultado antes de producción; no reinicialices una base con datos reales.
+4. Aplica todas las migraciones de `supabase/migrations/` en orden, primero en una base de prueba. Incluyen perfiles, solicitudes, equipo familiar con varios asesores, MFA y avisos opcionales. Revisa el resultado antes de producción; no reinicialices una base con datos reales.
 5. Copia URL y clave pública a las variables correspondientes. La clave pública conecta al proyecto; las políticas del servidor deciden qué datos puede consultar cada usuario.
 6. Configura las URL de retorno de autenticación para desarrollo y para el dominio público exacto. Evita comodines amplios en producción.
 7. Mantén la confirmación de correo y configura SMTP. Prueba alta, confirmación, acceso, cierre de sesión y recuperación en el entorno de pruebas. En producción, prepara las primeras cuentas mediante invitaciones administrativas hasta abrir el registro público.
@@ -52,7 +52,7 @@ Sin Supabase configurado, se puede revisar la interfaz y preparar información l
 
 El SMTP predeterminado de Supabase es para pruebas: entrega solo a integrantes del equipo del proyecto, con un límite de dos mensajes por hora. **No sirve para registrar al público.** Configura un proveedor SMTP y verifica el remitente según sus requisitos. [Documentación oficial](https://supabase.com/docs/guides/auth/auth-smtp)
 
-En esta entrega, los avisos de nuevas solicitudes se consultan **dentro del panel al cargarlo o actualizarlo**. No son correos, SMS, mensajes de WhatsApp ni avisos push del teléfono. El correo de autenticación y las notificaciones operativas son flujos diferentes.
+Los avisos de nuevas solicitudes se consultan **dentro del panel al cargarlo o actualizarlo**, cuando se active la nube. El canal Web Push al teléfono está preparado y apagado por defecto; requiere [configuración y pruebas propias](notificaciones-telefono.md). No son correos, SMS ni WhatsApp automáticos. El correo de autenticación y las notificaciones operativas son flujos diferentes.
 
 Para añadir correos operativos después, habrá que implementar envío, reintentos y estado de entrega. Conviene enviar solo un resumen y un enlace al panel protegido, sin domicilios completos o inventario en el asunto. Una solicitud guardada y una notificación entregada son hechos distintos.
 
@@ -64,7 +64,7 @@ El propietario utilizará el correo que ha confirmado para su cuenta. **El corre
 2. En Supabase, comprueba esa cuenta y copia su **UUID de Auth**, verificando que `email_confirmed_at` tiene valor.
 3. Abre `supabase/bootstrap-owner.sql`, revisa su contenido y sustituye el UUID indicado por el de esa cuenta. Ejecútalo mediante una conexión administrativa de confianza. No uses un UUID de ejemplo.
 4. Comprueba con una nueva sesión que el propietario tiene el rol previsto y que otros usuarios no pueden asignárselo.
-5. Crea la cuenta que operará como proveedor familiar y solicita su alta. El superusuario aprueba su acceso de piloto mediante la operación administrativa `set_provider_access`, con vigencia explícita y marca de proveedor familiar.
+5. Invita a Tere y Marco a correos individuales siguiendo [seguridad y cuentas](seguridad-y-cuentas.md). Cada uno establece su contraseña y autenticador. El superusuario aprueba a cada asesor mediante `set_provider_access`, con vigencia explícita y marca de miembro del equipo familiar. No se utilizan contraseñas compartidas.
 6. Revisa los demás roles desde las operaciones administrativas autorizadas y conserva trazabilidad de cambios.
 
 La configuración privada `private.platform_settings` comienza con `accepting_requests = false` y `network_enabled = false`. Cuando estén listos los avisos, SMTP, proveedor familiar y pruebas, activa la recepción desde una operación administrativa de base de datos. **Mantén la red de terceros desactivada para el piloto familiar.** Un cambio en `VITE_PRIVACY_READY` no modifica estas restricciones de servidor.
