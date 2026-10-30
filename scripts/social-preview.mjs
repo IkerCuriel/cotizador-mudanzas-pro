@@ -9,10 +9,10 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" v
   <g transform="translate(62 50)" fill="none" stroke="#fb9a66" stroke-width="3"><path d="M0 12 20 0l20 12v25L20 49 0 37zM0 12l20 12 20-12M20 24v25M10 6l20 12v12"/></g>
   <text x="121" y="86" font-family="Arial,sans-serif" font-size="33" font-weight="700" fill="#fff8ed">MoveFlow</text>
   <text x="1127" y="80" text-anchor="end" font-family="Arial,sans-serif" font-size="17" letter-spacing="3" fill="#cfdae1">MUDANZAS</text>
-  <text x="64" y="185" font-family="Arial,sans-serif" font-size="16" letter-spacing="2" fill="#d5dfe4">DE PERSONA A PERSONA</text>
+  <text x="64" y="185" font-family="Arial,sans-serif" font-size="16" letter-spacing="2" fill="#d5dfe4">CON MUDANZAS D’CURIEL</text>
   <text x="59" y="275" font-family="Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2" fill="#fff8ed">Cambia de casa.</text>
   <text x="59" y="353" font-family="Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2" fill="#fb9a66">Empieza tranquilo.</text>
-  <text x="64" y="411" font-family="Arial,sans-serif" font-size="23" fill="#cfdae1">Tu plan. Tu asesor. Tu próximo comienzo.</text>
+  <text x="64" y="411" font-family="Arial,sans-serif" font-size="23" fill="#cfdae1">Tu plan. Tu mudanza. Tu próximo comienzo.</text>
   <rect x="64" y="460" width="292" height="61" rx="13" fill="#fb9a66"/>
   <text x="91" y="499" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#142536">Planea tu mudanza</text>
   <path d="M318 489h15m-6-6 6 6-6 6" stroke="#142536" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>

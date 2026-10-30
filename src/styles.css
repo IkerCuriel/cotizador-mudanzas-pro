@@ -239,8 +239,6 @@ h1, h2, h3, h4, .brand { font-family: 'Manrope', -apple-system, BlinkMacSystemFo
 .modal-inventory ul { margin: 0 0 18px; padding-left: 18px; }
 .modal-inventory p { margin: 10px 0; }
 .success-modal > .submission-status { max-width: none; margin: 18px 0; padding: 12px; color: #655237; background: #fff7e9; border: 1px solid #efdabc; border-radius: 9px; text-align: left; font-size: 11px; }
-.success-modal > .business-contact { max-width: none; margin: 18px 0 0; font-size: 10px; }
-.business-contact span { white-space: nowrap; font-weight: 700; }
 .modal-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 20px; }
 .modal-actions .button { font-size: 12px; }
 .copy-feedback { display: block; min-height: 15px; margin-top: 10px; color: var(--success); font-size: 11px; }
@@ -258,20 +256,16 @@ h1, h2, h3, h4, .brand { font-family: 'Manrope', -apple-system, BlinkMacSystemFo
 .hero-benefits li::before { content: '✓'; margin-right: 7px; color: #ffad7d; }
 .hero-note { color: #b1c0ca; }
 .hero-route { box-shadow: 0 20px 40px #09131c33; }
-.advisor-section { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 22px 38px; align-items: center; margin: 5px 5% 42px; padding: 28px 30px; background: #f0eee6; border: 1px solid #e3e1d7; border-radius: 20px; }
-.advisor-intro h2, .questions-section h2 { margin: 9px 0 12px; font-size: 27px; line-height: 1.25; letter-spacing: -.9px; }
-.advisor-intro p, .questions-section > div > p { margin: 0 0 13px; font-size: 13px; line-height: 1.75; color: #566671; }
-.advisor-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
-.advisor-card { min-width: 0; padding: 20px 18px 16px; border: 1px solid #dedfd7; border-radius: 15px; background: #fffefa; }
-.advisor-card__person { display: flex; align-items: center; gap: 10px; }
-.advisor-avatar { display: inline-grid; width: 39px; height: 39px; flex-shrink: 0; place-items: center; color: #9b401c; background: #fae4d5; border-radius: 50%; font-size: 12px; font-weight: 750; }
-.advisor-card:nth-child(2) .advisor-avatar, .advisor-option:nth-child(2) .advisor-avatar { color: #2c5d52; background: #e1eae2; }
-.advisor-card h3 { margin: 0 0 3px; font-size: 15px; line-height: 1.3; letter-spacing: -.4px; }
-.advisor-card__person p { margin: 0; color: var(--muted); font-size: 10px; }
-.advisor-phone { margin: 16px 0 13px; color: #4b616b; font-size: 13px; letter-spacing: .6px; }
-.button--contact { width: 100%; min-height: 43px; padding: 10px 9px; gap: 6px; background: #edf4ee; color: #1f5847; border-color: #d6e4d8; font-size: 12px; }
-.button--contact:hover { background: #dcece0; border-color: #b4ccbc; }
-.advisor-disclosure { grid-column: 1 / -1; margin: 0; padding-top: 15px; border-top: 1px solid #d9ddd3; color: #586b64; font-size: 11px; line-height: 1.6; }
+.business-contact-section { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(230px, .8fr); gap: 22px 38px; align-items: center; margin: 5px 5% 42px; padding: 28px 30px; background: #f0eee6; border: 1px solid #e3e1d7; border-radius: 20px; }
+.business-contact-intro h2, .questions-section h2 { margin: 9px 0 12px; font-size: 27px; line-height: 1.25; letter-spacing: -.9px; }
+.business-contact-intro p, .questions-section > div > p { margin: 0 0 13px; font-size: 13px; line-height: 1.75; color: #566671; }
+.business-contact-action { min-width: 0; padding: 24px; border: 1px solid #d6e0d4; border-radius: 15px; background: #fffefa; }
+.business-contact-icon { display: grid; width: 36px; height: 36px; place-items: center; color: #23624e; background: #e7f0e5; border-radius: 10px; font-size: 20px; }
+.business-contact-action p { margin: 15px 0; font-size: 15px; font-weight: 650; }
+.business-contact-action small { display: block; margin-top: 12px; color: #566671; font-size: 11px; line-height: 1.6; }
+.button--contact { width: 100%; min-height: 46px; padding: 11px 12px; gap: 8px; background: #23624e; color: #fff; border-color: #23624e; font-size: 13px; }
+.button--contact:hover { background: #184d3d; border-color: #184d3d; }
+.business-contact-disclosure { grid-column: 1 / -1; margin: 0; padding-top: 15px; border-top: 1px solid #d9ddd3; color: #586b64; font-size: 11px; line-height: 1.6; }
 .quote-intro { margin: 9px 0 0; font-size: 12px; color: #65747c; line-height: 1.6; }
 .stepper__item.is-active > span { background: var(--brand-dark); border-color: var(--brand-dark); }
 .questions-section { display: grid; grid-template-columns: .75fr 1.25fr; gap: 70px; margin: 48px 5%; padding: 38px 5px; border-top: 1px solid #dce1dc; }
@@ -279,15 +273,6 @@ h1, h2, h3, h4, .brand { font-family: 'Manrope', -apple-system, BlinkMacSystemFo
 .questions-list details { border-bottom: 1px solid #d9dfdc; }
 .questions-list summary { padding: 18px 0; font-size: 14px; font-weight: 650; }
 .questions-list p { margin: 0 0 20px; font-size: 13px; line-height: 1.8; color: #586b76; }
-.advisor-picker { min-width: 0; margin: 22px 0 10px; padding: 0; border: 0; text-align: left; }
-.advisor-picker legend { margin-bottom: 14px; padding: 0; font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 750; }
-.advisor-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.advisor-option { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 15px 12px; background: #fafbf8; border: 1px solid #cdd6d0; border-radius: 12px; cursor: pointer; }
-.advisor-option:has(input:checked) { background: #eef5ec; border-color: #438368; box-shadow: inset 0 0 0 1px #438368; }
-.advisor-option input { width: 17px; height: 17px; flex-shrink: 0; margin: 0; accent-color: #276654; }
-.advisor-option strong { display: block; font-size: 13px; }
-.advisor-option small { display: block; margin-top: 3px; color: #596d65; font-size: 11px; }
-.advisor-picker .field-hint { margin: 12px 0 0; font-size: 11px; }
 .button--whatsapp { width: 100%; margin-top: 18px; color: white; background: #23624e; border-color: #23624e; }
 .button--whatsapp:hover { background: #184d3d; border-color: #184d3d; }
 .share-feedback { margin: 12px 0; color: #4c6356; font-size: 11px; line-height: 1.7; text-align: left; }
@@ -297,40 +282,25 @@ h1, h2, h3, h4, .brand { font-family: 'Manrope', -apple-system, BlinkMacSystemFo
 .prepared-details .modal-summary { margin-top: 3px; }
 .prepared-details .modal-inventory { padding: 0 8px; }
 @media (max-width: 1100px) {
-  .advisor-section { grid-template-columns: 1fr; gap: 20px; }
-  .advisor-intro { max-width: 600px; }
-  .advisor-intro h2 { font-size: 25px; }
-  .advisor-card { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
-  .advisor-card .advisor-phone { grid-column: 1 / -1; margin: -6px 0 0 49px; grid-row: 2; }
-  .advisor-card .button { width: auto; grid-column: 1 / -1; }
+  .business-contact-section { gap: 20px; }
+  .business-contact-intro h2 { font-size: 25px; }
+  .business-contact-action { padding: 20px; }
   .questions-section { gap: 35px; }
 }
 @media (max-width: 600px) {
   .hero-actions { flex-direction: column; gap: 10px; }
   .hero-actions .button { width: 100%; font-size: 14px; }
   .hero-benefits { gap: 8px 13px; font-size: 10px; margin-top: 19px; }
-  .advisor-section { margin: 3px 3% 25px; padding: 22px 16px; gap: 19px; border-radius: 17px; }
-  .advisor-intro h2 { font-size: 24px; }
-  .advisor-intro p { font-size: 12px; }
-  .advisor-cards { gap: 10px; }
-  .advisor-card { display: block; padding: 14px 11px 11px; }
-  .advisor-card__person { display: block; }
-  .advisor-avatar { width: 34px; height: 34px; margin-bottom: 10px; font-size: 10px; }
-  .advisor-card h3 { font-size: 14px; }
-  .advisor-card__person p { font-size: 9px; }
-  .advisor-card .advisor-phone { margin: 13px 0; font-size: 11px; letter-spacing: .1px; }
-  .advisor-card .button { width: 100%; padding: 10px 6px; font-size: 11px; gap: 3px; }
-  .advisor-disclosure { font-size: 10px; }
+  .business-contact-section { grid-template-columns: 1fr; margin: 3px 3% 25px; padding: 22px 16px; gap: 19px; border-radius: 17px; }
+  .business-contact-intro h2 { font-size: 24px; }
+  .business-contact-intro p { font-size: 12px; }
+  .business-contact-action { padding: 18px; }
+  .business-contact-disclosure { font-size: 11px; }
   .quote-intro { font-size: 11px; }
   .questions-section { grid-template-columns: 1fr; margin: 30px 6%; padding: 25px 0 5px; gap: 10px; }
   .questions-section h2 { font-size: 27px; }
   .questions-list summary { font-size: 13px; }
   .questions-list p { font-size: 12px; }
-  .advisor-picker legend { font-size: 14px; }
-  .advisor-option { padding: 13px 10px; gap: 7px; }
-  .advisor-option .advisor-avatar { display: none; }
-  .advisor-option strong { font-size: 12px; }
-  .advisor-option small { font-size: 10px; }
 }
 
 @media (min-width: 1400px) {
@@ -474,7 +444,7 @@ h1, h2, h3, h4, .brand { font-family: 'Manrope', -apple-system, BlinkMacSystemFo
 @media print {
   @page { margin: 17mm; }
   body { min-width: 0; background: white; font-size: 10pt; }
-  .page-shell, .skip-link, .modal-close, .modal-actions, .copy-feedback, .modal-pilot-link, .advisor-picker, #shareWhatsApp, .share-feedback, .prepared-details > summary { display: none !important; }
+  .page-shell, .skip-link, .modal-close, .modal-actions, .copy-feedback, .modal-pilot-link, #whatsAppShareHelp, #shareWhatsApp, .share-feedback, .prepared-details > summary { display: none !important; }
   .modal-backdrop { position: static; display: block; padding: 0; overflow: visible; visibility: visible; opacity: 1; background: white; backdrop-filter: none; }
   .success-modal { width: 100%; max-height: none; padding: 0; overflow: visible; border-radius: 0; box-shadow: none; }
   .success-modal h2 { font-size: 23pt; }

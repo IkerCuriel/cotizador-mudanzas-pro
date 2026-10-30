@@ -1,6 +1,27 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ADVISORS, BUSINESS, buildWhatsAppUrl, buildAdvisorWhatsAppUrl, getAdvisor } from "../src/config.js";
+import { ADVISORS, BUSINESS, BUSINESS_GREETING, buildBusinessWhatsAppUrl, buildWhatsAppUrl, buildAdvisorWhatsAppUrl, getAdvisor } from "../src/config.js";
+
+test("el contacto directo del negocio abre con Tere y un saludo útil sin datos de una ficha", () => {
+  for (const input of [undefined, null, "", "   "]) {
+    const url = new URL(buildBusinessWhatsAppUrl(input));
+    assert.equal(url.origin, "https://wa.me");
+    assert.equal(url.pathname, "/525529061098");
+    assert.equal(url.searchParams.get("text"), BUSINESS_GREETING);
+    assert.equal(url.searchParams.size, 1);
+  }
+  assert.match(BUSINESS_GREETING, /Mudanzas D’Curiel/);
+  assert.match(BUSINESS_GREETING, /servicio de mudanza/);
+});
+
+test("la solicitud completa llega al enlace del negocio sin perder notas, acentos ni saltos", () => {
+  const details = "SOLICITUD DE MUDANZA · MF-PRUEBA\nRuta: México → Puebla\nInventario: 2 × sofá & mesa #1\nNotas: ¿Acceso por escalera?";
+  const url = new URL(buildBusinessWhatsAppUrl(details));
+  assert.equal(url.pathname, "/525529061098");
+  assert.ok(url.searchParams.get("text").endsWith(`\n\n${details}`));
+  assert.match(url.searchParams.get("text"), /Hola, Mudanzas D’Curiel/);
+  assert.equal(url.searchParams.size, 1);
+});
 
 test("la ficha se dirige al WhatsApp proporcionado por el usuario con lada de México", () => {
   const text = "Solicitud de prueba: PB → Piso 2; mesa & sofá #1";

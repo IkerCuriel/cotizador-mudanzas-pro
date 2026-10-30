@@ -1,6 +1,10 @@
 # Avisos al teléfono de Tere, Marco y los negocios autorizados
 
-Estado: **preparados en el código, pendientes de conexión y prueba real**. No se han creado claves ni enviado notificaciones. Los teléfonos publicados en la página son contactos de WhatsApp; escribir un teléfono en una cuenta no activa avisos automáticos.
+Estado del canal Web Push: **preparado en el código, pendiente de conexión y prueba real**. No se han creado claves ni enviado notificaciones. Escribir un teléfono en una cuenta no activa avisos automáticos.
+
+La web pública presenta una sola atención, **Mudanzas D’Curiel**, sin tarjetas personales ni selector. Sus botones de contacto abren la línea de Tere con un mensaje general; la ficha revisada en el modal abre esa misma línea con los datos completados. En ambos casos, el cliente debe pulsar **Enviar** dentro de WhatsApp. Marco sigue previsto como integrante del equipo, pero no recibe una copia automática. No se han cambiado cuentas de WhatsApp, vinculado teléfonos ni enviado mensajes de prueba.
+
+La [guía de WhatsApp del negocio](whatsapp-negocio.md) describe el funcionamiento actual y las dos opciones siguientes: vincular un teléfono de Marco a la misma cuenta de WhatsApp Business de Tere, o construir una integración de servidor con WhatsApp Business Platform para avisar a dos números independientes. Esta integración no está implementada ni activada; es distinta del canal Web Push de esta guía.
 
 ## Qué verá cada asesor
 
@@ -10,7 +14,7 @@ El aviso dice: «Hay una nueva solicitud disponible. Entra a tu panel para revis
 
 **No se garantiza entrega inmediata.** Depende de Internet, el navegador, las restricciones de batería, el permiso, el modo de concentración y los servicios de Google, Mozilla o Apple. El panel es la fuente de seguimiento; un aviso aceptado por el servicio push no confirma que la persona lo leyó. WhatsApp Business automático o SMS requieren otra integración y sus propias condiciones/costos; no forman parte de esta implementación.
 
-Para una solicitud familiar recibida en Supabase, Tere y Marco recibirán cada uno su aviso si ambos tienen cuentas distintas, están aprobados, pertenecen al equipo familiar, tienen vigencia y han activado un dispositivo. Un enlace manual de WhatsApp solo envía al contacto que el cliente selecciona.
+Para una solicitud familiar recibida en Supabase, el sistema intentará enviar a Tere y Marco su aviso si ambos tienen cuentas distintas, están aprobados, pertenecen al equipo familiar, tienen vigencia y han activado un dispositivo. El enlace manual de WhatsApp del piloto prepara el mensaje únicamente para Tere y requiere que el cliente lo envíe; no genera una solicitud en Supabase ni un aviso Web Push.
 
 ## Requisitos antes de activarlo
 

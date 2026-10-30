@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
         { tag: 'meta', attrs: { property: 'og:locale', content: 'es_MX' }, injectTo: 'head' },
         { tag: 'meta', attrs: { property: 'og:site_name', content: 'MoveFlow' }, injectTo: 'head' },
         { tag: 'meta', attrs: { property: 'og:title', content: 'MoveFlow | Cambia de casa. Empieza tranquilo.' }, injectTo: 'head' },
-        { tag: 'meta', attrs: { property: 'og:description', content: 'Prepara tu mudanza y conversa con Tere o Marco por WhatsApp. Atención personal para acordar el servicio contigo.' }, injectTo: 'head' },
+        { tag: 'meta', attrs: { property: 'og:description', content: 'Prepara tu mudanza y conversa con Mudanzas D’Curiel por WhatsApp. Atención personal para acordar el servicio contigo.' }, injectTo: 'head' },
         { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' }, injectTo: 'head' },
       );
       if (origin) tags.push(
