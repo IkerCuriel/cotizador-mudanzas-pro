@@ -1,6 +1,8 @@
 # Lanzamiento y configuración
 
-Estado: preparación local. No hay una nube de producción activada ni se han comprado servicios o dominio en esta entrega. Referencias consultadas el 30 de octubre de 2026; comprobar condiciones antes de contratar.
+Estado: piloto público por WhatsApp en [MoveFlow Mudanzas](https://moveflow-mudanzas.render-inspace.chatgpt.site/), alojado con Sites (OpenAI). No se ha comprado un dominio. Supabase, cuentas, avisos y cobros siguen pendientes de activación. Referencias consultadas el 30 de octubre de 2026; comprobar condiciones antes de contratar.
+
+La publicación actual usa `.openai/hosting.json` y el origen de `site.config.js`. Un cambio en GitHub ejecuta las verificaciones, pero requiere una nueva publicación con Sites para aparecer en el enlace público. La sección 6 se conserva como alternativa de migración a Cloudflare.
 
 ## 1. Qué se publicará primero
 
@@ -99,7 +101,7 @@ psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/authorization.sql
 
 Comprueba además formulario móvil, errores y reintentos, separación entre usuarios, recepción del negocio, vigencia del acceso y cierre de sesión. Usa datos ficticios. Completa los pendientes de [operación y privacidad](operacion-y-privacidad.md) antes de abrir registros.
 
-## 6. Publicar en Cloudflare Pages
+## 6. Alternativa: migrar a Cloudflare Pages
 
 1. Crea o utiliza una cuenta de [Cloudflare](https://dash.cloudflare.com/) y abre **Workers & Pages → Crear aplicación → Pages → Conectar a Git**. Los nombres de las opciones pueden variar.
 2. Autoriza el acceso al repositorio `IkerCuriel/cotizador-mudanzas-pro`. Mantén todos los secretos fuera de Git aunque el repositorio sea público.

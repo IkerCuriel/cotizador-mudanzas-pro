@@ -8,7 +8,9 @@ La primera operación se realizará con el negocio familiar. **MoveFlow es un no
 
 ## Estado de esta entrega
 
-El proyecto se desarrolla y prueba localmente. **La base de datos, las cuentas y las notificaciones aún no están activadas en una nube de producción.** Tener el formulario publicado no demuestra que las solicitudes lleguen al negocio. La recepción compartida requiere configurar Supabase y sus permisos.
+El piloto público se aloja en [MoveFlow Mudanzas](https://moveflow-mudanzas.render-inspace.chatgpt.site/), con un enlace que no incluye el nombre personal del propietario. El cliente prepara su ficha y confirma su envío al negocio en WhatsApp.
+
+**La base de datos, las cuentas y las notificaciones aún no están activadas en una nube de producción.** La recepción compartida requiere configurar Supabase y sus permisos. Preparar una ficha por sí solo no la entrega al negocio.
 
 El piloto no cobra suscripciones. La futura membresía será para los **mudanceros que reciben oportunidades**; quien solicita una mudanza tendrá una cuenta gratuita. No se garantizan contrataciones, ingresos ni un número de solicitudes.
 
@@ -68,13 +70,15 @@ El WhatsApp del negocio familiar es **55 2906 1098**, configurado como `52552906
 
 `docs/flujo-solicitudes.md`, `docs/tarifas.md`, las capturas anteriores y el panel de almacenamiento local describen etapas previas. Son historial, no evidencia de recepción remota o servicios activos. No importar datos reales de pruebas a producción sin revisar su procedencia y autorización.
 
-## Publicación prevista
+## Publicación
+
+El alojamiento actual del piloto es **Sites (OpenAI)**. `.openai/hosting.json` conserva su identidad y declara `dist` como salida estática. `site.config.js` guarda el origen público para la tarjeta social; `VITE_SITE_URL` permite sustituirlo al cambiar de dominio. El código continúa en este repositorio de GitHub. Las actualizaciones públicas se empaquetan y publican con Sites; un envío a GitHub no publica por sí solo.
 
 Cada cambio enviado al repositorio ejecuta las pruebas de permisos y la compilación en GitHub Actions. Una ejecución exitosa guarda `moveflow-web` durante siete días para revisión. Ese archivo es una compilación de comprobación sin las conexiones de producción: no activa cuentas, no recibe solicitudes y no publica la página.
 
-Cloudflare debe construir su propia versión desde `main` con las variables de su entorno. Solo se admiten las variables públicas `VITE_` enumeradas en `.env.example`; las demás se rechazan para evitar incorporar credenciales por error. Nunca coloques claves privadas de Supabase, SMTP o pagos en ese grupo.
+Si se migra a Cloudflare, deberá construir su propia versión desde `main` con las variables de su entorno. Solo se admiten las variables públicas `VITE_` enumeradas en `.env.example`; las demás se rechazan para evitar incorporar credenciales por error. Nunca coloques claves privadas de Supabase, SMTP o pagos en ese grupo.
 
-Se conserva GitHub para el código y se prepara **Cloudflare Pages para el sitio, junto con Supabase para cuentas y datos**. GitHub Pages no es el destino del producto comercial: sus [límites de uso](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits) excluyen negocios online y SaaS comercial.
+Se conserva la guía de **Cloudflare Pages como alternativa de alojamiento, junto con Supabase para cuentas y datos**. GitHub Pages no es el destino del producto comercial: sus [límites de uso](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits) excluyen negocios online y SaaS comercial.
 
 Es posible empezar con cuotas gratuitas y un subdominio `pages.dev`. Un dominio propio es opcional al principio. Los correos, el uso y los futuros cobros tienen condiciones y límites.
 

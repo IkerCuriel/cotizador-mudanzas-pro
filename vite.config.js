@@ -2,13 +2,14 @@ import { defineConfig, loadEnv } from "vite";
 import { fileURLToPath } from "node:url";
 import { readCloudConfig } from "./src/cloud.js";
 import { assertPublicEnvironment } from "./scripts/public-env.mjs";
+import { PUBLIC_SITE_URL } from "./site.config.js";
 
 export default defineConfig(({ mode }) => {
   const env = { ...loadEnv(mode, process.cwd(), ''), ...process.env };
   assertPublicEnvironment(env);
   const config = readCloudConfig(env);
   if (config.error) throw new Error(config.error + ' Usa exclusivamente la clave pública anon/publishable de Supabase.');
-  const siteUrl = env.VITE_SITE_URL || env.CF_PAGES_URL;
+  const siteUrl = env.VITE_SITE_URL || env.CF_PAGES_URL || PUBLIC_SITE_URL;
   let origin;
   if (siteUrl) {
     const parsed = new URL(siteUrl);
