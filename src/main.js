@@ -1,575 +1,457 @@
-const INVENTORY = [
-  { id: "boxes", name: "Cajas medianas", detail: "0.10 m³ c/u", icon: "□", volume: 0.1, handling: 22 },
-  { id: "glassware", name: "Vajilla y vasos", detail: "Caja de cocina / cristalería", icon: "◫", volume: 0.12, handling: 95 },
-  { id: "sofa", name: "Sofá", detail: "2–3 plazas", icon: "▱", volume: 1.8, handling: 380 },
-  { id: "armchair", name: "Sillón individual", detail: "1 plaza", icon: "▰", volume: 0.75, handling: 180 },
-  { id: "bed", name: "Cama / colchón", detail: "Individual a king", icon: "▭", volume: 1.3, handling: 280 },
-  { id: "wardrobe", name: "Ropero / clóset", detail: "Mueble grande", icon: "▥", volume: 1.6, handling: 360 },
-  { id: "diningTable", name: "Mesa de comedor", detail: "4–8 personas", icon: "▦", volume: 1.2, handling: 260 },
-  { id: "diningChair", name: "Silla de comedor", detail: "Por pieza", icon: "⌑", volume: 0.25, handling: 55 },
-  { id: "refrigerator", name: "Refrigerador", detail: "Mediano o grande", icon: "▯", volume: 1.45, handling: 420 },
-  { id: "washer", name: "Lavadora / secadora", detail: "Línea blanca", icon: "◉", volume: 0.85, handling: 320 },
-  { id: "tv", name: "Televisión", detail: "Pantalla plana", icon: "▣", volume: 0.2, handling: 180 },
-  { id: "desk", name: "Escritorio", detail: "Casa u oficina", icon: "⌨", volume: 0.85, handling: 210 },
-  { id: "bookcase", name: "Librero / estante", detail: "Mueble vertical", icon: "▤", volume: 1.05, handling: 240 },
-  { id: "appliance", name: "Electrodoméstico", detail: "Microondas, horno, etc.", icon: "◇", volume: 0.18, handling: 75 },
-  { id: "decor", name: "Decoración / cuadros", detail: "Lote protegido", icon: "◫", volume: 0.14, handling: 70 },
-];
+import { ROOMS, FURNITURE, ITEMS, PROPERTY_TYPES, ACCESS_TYPES, CARRY_RANGES } from "./catalog.js";
+import { createRequest, normalizeDraft, migrateLegacyDraft, buildRequestText } from "./request.js";
+import { saveRequest, loadRequests } from "./storage.js";
+import { BUSINESS, buildWhatsAppUrl } from "./config.js";
+import { isCloudConfigured, getSession, getPublicSettings, submitCloudRequest, accountUrl, cloudErrorMessage } from "./cloud.js";
+import { LEGAL_READY } from "./legal-config.js";
 
-const PRESETS = {
-  mini: { boxes: 8, glassware: 1, bed: 1, tv: 1, desk: 1, decor: 2 },
-  oneBedroom: { boxes: 18, glassware: 2, sofa: 1, bed: 1, diningTable: 1, diningChair: 4, refrigerator: 1, tv: 1, appliance: 3 },
-  twoBedroom: { boxes: 32, glassware: 4, sofa: 1, armchair: 1, bed: 2, wardrobe: 1, diningTable: 1, diningChair: 6, refrigerator: 1, washer: 1, tv: 2, desk: 1, appliance: 5, decor: 4 },
-  family: { boxes: 52, glassware: 7, sofa: 2, armchair: 2, bed: 3, wardrobe: 2, diningTable: 1, diningChair: 8, refrigerator: 1, washer: 2, tv: 3, desk: 2, bookcase: 2, appliance: 8, decor: 7 },
-};
+const DRAFT_KEY = "moveflow-request-draft-v1";
+const LEGACY_KEY = "moveflow-quote-draft";
+const form = document.getElementById("movingQuoteForm");
+const modal = document.getElementById("quoteModal");
+const state = { step: 1, rooms: {}, inventory: {}, activeRoom: "all", variants: {}, request: null, prepared: null, draftWarning: "" };
+const emptyCounts = (items) => Object.fromEntries(items.map((item) => [item.id, 0]));
+const valueOf = (id) => document.getElementById(id)?.value ?? "";
+const checked = (id) => document.getElementById(id)?.checked === true;
+const packingLabels = { none: "El cliente empaca", partial: "Empaque parcial", full: "Empaque completo", boxes: "Empaque de cajas", undecided: "Empaque por definir con el equipo" };
+const contactLabels = { whatsapp: "WhatsApp", call: "Llamada", either: "Llamada o WhatsApp" };
+const windowLabels = { anytime: "Cualquier horario", morning: "Mañana", afternoon: "Tarde", evening: "Noche" };
+const answerLabels = { yes: "Sí", no: "No", unknown: "Por confirmar" };
+let modalTrigger;
+let cloudState = { session: null, settings: null, sending: false, sentReference: null };
 
-const SERVICE_LABELS = {
-  packing: "Empaque profesional",
-  assembly: "Desarmado y armado",
-  fragile: "Manejo de frágiles",
-  insurance: "Cobertura ampliada",
-  longCarry: "Acarreo extendido",
-  express: "Servicio prioritario",
-};
-
-// Ajusta aquí las tarifas comerciales sin tocar el flujo del formulario.
-const PRICING = {
-  minimumQuote: 1450,
-  baseOperation: 920,
-  distancePerKm: {
-    local: 23,
-    regional: 20,
-    longDistance: 18,
-  },
-  volumePerM3: 145,
-  accessPerFloor: {
-    withoutElevator: 190,
-    withElevator: 45,
-  },
-  services: {
-    packingMinimum: 650,
-    packingRate: 0.16,
-    assembly: 550,
-    fragile: 420,
-    longCarry: 350,
-    insuranceRate: 0.04,
-    expressRate: 0.12,
-  },
-  protectionMultiplier: {
-    standard: 1,
-    plus: 1.055,
-    premium: 1.11,
-  },
-  weekendRate: 0.08,
-  range: {
-    low: 0.94,
-    high: 1.12,
-    minimumSpread: 250,
-  },
-};
-
-const state = {
-  currentStep: 1,
-  inventory: Object.fromEntries(INVENTORY.map((item) => [item.id, 0])),
-  quote: null,
-};
-
-const form = document.querySelector("#movingQuoteForm");
-const steps = [...document.querySelectorAll(".form-step")];
-const stepperItems = [...document.querySelectorAll(".stepper__item")];
-const inventoryGrid = document.querySelector("#inventoryGrid");
-const nextButton = document.querySelector("#nextStep");
-const prevButton = document.querySelector("#prevStep");
-const submitButton = document.querySelector("#submitQuote");
-const quoteModal = document.querySelector("#quoteModal");
-
-const money = new Intl.NumberFormat("es-MX", {
-  style: "currency",
-  currency: "MXN",
-  maximumFractionDigits: 0,
-});
-
-function formatMoney(value) {
-  return money.format(Math.max(0, Math.round(value)));
+function text(id, value) { const element = document.getElementById(id); if (element) element.textContent = value; }
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[c]);
 }
-
-function roundToFifty(value) {
-  return Math.ceil(value / 50) * 50;
-}
-
-function valueOf(id, fallback = "") {
-  return document.querySelector(`#${id}`)?.value ?? fallback;
-}
-
-function numberOf(id, fallback = 0) {
-  const value = Number(valueOf(id));
-  return Number.isFinite(value) ? value : fallback;
-}
-
-function isChecked(id) {
-  return Boolean(document.querySelector(`#${id}`)?.checked);
-}
-
-function selectedServices() {
-  return [...document.querySelectorAll('input[name="service"]:checked')].map((input) => input.value);
-}
-
-function renderInventory() {
-  inventoryGrid.innerHTML = INVENTORY.map((item) => `
-    <article class="inventory-item" data-item-id="${item.id}">
-      <span class="inventory-item__icon" aria-hidden="true">${item.icon}</span>
-      <div class="inventory-item__meta">
-        <strong>${item.name}</strong>
-        <small>${item.detail}</small>
-      </div>
-      <div class="quantity-control" aria-label="Cantidad de ${item.name}">
-        <button type="button" data-quantity-action="decrease" data-item-id="${item.id}" aria-label="Disminuir ${item.name}">−</button>
-        <output id="quantity-${item.id}" aria-live="polite">0</output>
-        <button type="button" data-quantity-action="increase" data-item-id="${item.id}" aria-label="Aumentar ${item.name}">+</button>
-      </div>
-    </article>
-  `).join("");
-}
-
-function updateInventoryUI() {
-  let total = 0;
-  INVENTORY.forEach((item) => {
-    const quantity = state.inventory[item.id] ?? 0;
-    total += quantity;
-    const output = document.querySelector(`#quantity-${item.id}`);
-    const card = document.querySelector(`[data-item-id="${item.id}"].inventory-item`);
-    if (output) output.value = quantity;
-    if (card) card.classList.toggle("has-quantity", quantity > 0);
-  });
-
-  document.querySelector("#itemCountLabel").textContent = `${total} ${total === 1 ? "artículo seleccionado" : "artículos seleccionados"}`;
-  document.querySelector("#summaryItems").textContent = String(total);
-}
-
-function calculateQuote() {
-  const distance = Math.max(1, numberOf("distanceKm", 10));
-  const originFloor = Math.max(0, numberOf("originFloor"));
-  const destinationFloor = Math.max(0, numberOf("destinationFloor"));
-  const originElevator = isChecked("originElevator");
-  const destinationElevator = isChecked("destinationElevator");
-  const protectionLevel = valueOf("protectionLevel", "standard");
-  const services = selectedServices();
-
-  const totalItems = INVENTORY.reduce((sum, item) => sum + (state.inventory[item.id] || 0), 0);
-  const totalVolume = INVENTORY.reduce((sum, item) => sum + (state.inventory[item.id] || 0) * item.volume, 0);
-  const handlingCost = INVENTORY.reduce((sum, item) => sum + (state.inventory[item.id] || 0) * item.handling, 0);
-
-  const baseCost = PRICING.baseOperation;
-  const distanceRate = distance <= 30
-    ? PRICING.distancePerKm.local
-    : distance <= 100
-      ? PRICING.distancePerKm.regional
-      : PRICING.distancePerKm.longDistance;
-  const distanceCost = distance * distanceRate;
-  const volumeCost = totalVolume * PRICING.volumePerM3;
-  const accessCost =
-    (!originElevator
-      ? originFloor * PRICING.accessPerFloor.withoutElevator
-      : originFloor * PRICING.accessPerFloor.withElevator) +
-    (!destinationElevator
-      ? destinationFloor * PRICING.accessPerFloor.withoutElevator
-      : destinationFloor * PRICING.accessPerFloor.withElevator);
-
-  let serviceCost = 0;
-  if (services.includes("packing")) {
-    serviceCost += Math.max(
-      PRICING.services.packingMinimum,
-      (handlingCost + volumeCost) * PRICING.services.packingRate,
-    );
-  }
-  if (services.includes("assembly")) serviceCost += PRICING.services.assembly;
-  if (services.includes("fragile")) serviceCost += PRICING.services.fragile;
-  if (services.includes("longCarry")) serviceCost += PRICING.services.longCarry;
-
-  const protectionMultiplier = PRICING.protectionMultiplier[protectionLevel] ?? 1;
-  let subtotal = (baseCost + distanceCost + handlingCost + volumeCost + accessCost + serviceCost) * protectionMultiplier;
-
-  const selectedDate = valueOf("moveDate");
-  let calendarSurcharge = 0;
-  if (selectedDate) {
-    const day = new Date(`${selectedDate}T12:00:00`).getDay();
-    if (day === 0 || day === 6) calendarSurcharge = subtotal * PRICING.weekendRate;
-  }
-
-  if (services.includes("express")) {
-    calendarSurcharge += subtotal * PRICING.services.expressRate;
-  }
-  subtotal += calendarSurcharge;
-
-  const insuranceCost = services.includes("insurance")
-    ? subtotal * PRICING.services.insuranceRate
-    : 0;
-  subtotal += insuranceCost;
-
-  const low = roundToFifty(Math.max(PRICING.minimumQuote, subtotal * PRICING.range.low));
-  const high = roundToFifty(
-    Math.max(low + PRICING.range.minimumSpread, subtotal * PRICING.range.high),
-  );
-
-  let vehicle = "Van ligera";
-  if (totalVolume > 5 && totalVolume <= 12) vehicle = "Camioneta 1.5 t";
-  if (totalVolume > 12 && totalVolume <= 24) vehicle = "Camión 3.5 t";
-  if (totalVolume > 24) vehicle = "Camión grande / 2 viajes";
-
-  const complexityScore = Math.min(
-    100,
-    12 + totalVolume * 2.2 + distance * 0.16 + (originFloor + destinationFloor) * 3 + services.length * 5,
-  );
-  const complexity = complexityScore < 32 ? "Básica" : complexityScore < 60 ? "Media" : complexityScore < 82 ? "Alta" : "Especial";
-
-  const breakdown = [
-    { label: "Operación base", amount: baseCost },
-    { label: `Traslado (${distance} km)`, amount: distanceCost },
-    { label: "Volumen y maniobras", amount: handlingCost + volumeCost },
-  ];
-
-  if (accessCost > 0) breakdown.push({ label: "Accesos y pisos", amount: accessCost });
-  if (serviceCost > 0) breakdown.push({ label: "Servicios adicionales", amount: serviceCost });
-  if (calendarSurcharge > 0) breakdown.push({ label: "Fecha / prioridad", amount: calendarSurcharge });
-  if (insuranceCost > 0) breakdown.push({ label: "Cobertura ampliada", amount: insuranceCost });
-
-  state.quote = {
-    low,
-    high,
-    distance,
-    totalItems,
-    totalVolume,
-    vehicle,
-    complexity,
-    complexityScore,
-    breakdown,
-    services,
-  };
-
-  renderEstimate();
-  persistDraft();
-  return state.quote;
-}
-
-function renderEstimate() {
-  const quote = state.quote;
-  if (!quote) return;
-
-  document.querySelector("#estimateFrom").textContent = formatMoney(quote.low);
-  document.querySelector("#estimateRangeText").textContent = `Rango sugerido: ${formatMoney(quote.low)} — ${formatMoney(quote.high)} MXN`;
-  document.querySelector("#summaryDistance").textContent = `${quote.distance} km`;
-  document.querySelector("#summaryItems").textContent = String(quote.totalItems);
-  document.querySelector("#summaryVolume").textContent = `${quote.totalVolume.toFixed(1)} m³`;
-  document.querySelector("#summaryVehicle").textContent = quote.vehicle;
-  document.querySelector("#complexityLabel").textContent = quote.complexity;
-  document.querySelector("#complexityBar").style.width = `${Math.max(12, quote.complexityScore)}%`;
-  document.querySelector("#finalRange").textContent = `${formatMoney(quote.low)} — ${formatMoney(quote.high)} MXN`;
-
-  document.querySelector("#breakdownList").innerHTML = quote.breakdown
-    .map((item) => `<div class="breakdown__row"><span>${item.label}</span><strong>${formatMoney(item.amount)}</strong></div>`)
-    .join("");
-}
-
-function showStep(stepNumber, shouldScroll = true) {
-  state.currentStep = Math.min(4, Math.max(1, stepNumber));
-
-  steps.forEach((step) => {
-    step.classList.toggle("is-active", Number(step.dataset.step) === state.currentStep);
-  });
-
-  stepperItems.forEach((item, index) => {
-    const step = index + 1;
-    item.classList.toggle("is-active", step === state.currentStep);
-    item.classList.toggle("is-complete", step < state.currentStep);
-    if (step === state.currentStep) item.setAttribute("aria-current", "step");
-    else item.removeAttribute("aria-current");
-  });
-
-  prevButton.classList.toggle("is-hidden", state.currentStep === 1);
-  nextButton.classList.toggle("is-hidden", state.currentStep === 4);
-  submitButton.classList.toggle("is-hidden", state.currentStep !== 4);
-  calculateQuote();
-  if (shouldScroll) {
-    document.querySelector(".quote-card").scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-}
-
-function setFieldError(field, message = "") {
-  const container = field.closest(".field") ?? field.closest(".consent-field")?.parentElement;
-  const error = document.querySelector(`[data-error-for="${field.id}"]`);
-  container?.classList.toggle("has-error", Boolean(message));
-  if (error) error.textContent = message;
-}
-
-function validateStep(stepNumber) {
-  const current = document.querySelector(`.form-step[data-step="${stepNumber}"]`);
-  if (!current) return true;
-
-  let valid = true;
-  const requiredFields = [...current.querySelectorAll("[required]")];
-
-  requiredFields.forEach((field) => {
-    let message = "";
-    if (field.type === "checkbox" && !field.checked) message = "Debes aceptar para continuar.";
-    else if (!String(field.value).trim()) message = "Este campo es obligatorio.";
-    else if (field.id === "distanceKm" && Number(field.value) < 1) message = "Ingresa una distancia válida.";
-    else if (field.id === "phone" && field.value.replace(/\D/g, "").length < 10) message = "Ingresa un teléfono de al menos 10 dígitos.";
-    else if (field.type === "email" && field.value && !field.validity.valid) message = "Ingresa un correo válido.";
-
-    setFieldError(field, message);
-    if (message) valid = false;
-  });
-
-  if (!valid) {
-    current.querySelector(".has-error input, .has-error select, .has-error textarea")?.focus();
-  }
-
-  return valid;
-}
-
-function applyPreset(presetName) {
-  const preset = PRESETS[presetName];
-  if (!preset) return;
-
-  state.inventory = Object.fromEntries(INVENTORY.map((item) => [item.id, preset[item.id] ?? 0]));
-  document.querySelectorAll(".preset-card").forEach((card) => {
-    card.classList.toggle("is-selected", card.dataset.preset === presetName);
-  });
-  updateInventoryUI();
-  calculateQuote();
-}
-
-function clearPresetSelection() {
-  document.querySelectorAll(".preset-card").forEach((card) => card.classList.remove("is-selected"));
-}
-
-function clearInventory() {
-  state.inventory = Object.fromEntries(INVENTORY.map((item) => [item.id, 0]));
-  clearPresetSelection();
-  updateInventoryUI();
-  calculateQuote();
-}
-
 function collectDraft() {
-  const fields = {};
-  new FormData(form).forEach((value, key) => {
-    if (key !== "service") fields[key] = value;
-  });
-
-  fields.originElevator = isChecked("originElevator");
-  fields.destinationElevator = isChecked("destinationElevator");
-  fields.services = selectedServices();
-
-  return {
-    fields,
-    inventory: state.inventory,
-    currentStep: state.currentStep,
-    updatedAt: new Date().toISOString(),
-  };
+  const fields = Object.fromEntries(new FormData(form));
+  fields.privacyConsent = checked("privacyConsent");
+  fields.packingAcknowledged = checked("packingAcknowledged");
+  return { fields, rooms: state.rooms, inventory: state.inventory };
 }
-
-function persistDraft() {
-  try {
-    localStorage.setItem("moveflow-quote-draft", JSON.stringify(collectDraft()));
-  } catch {
-    // El cotizador sigue funcionando aun si el navegador bloquea localStorage.
+function setConditional(id, visible) {
+  const container = document.getElementById(id);
+  if (!container) return;
+  container.hidden = !visible;
+  container.classList.toggle("is-hidden", !visible);
+  container.querySelectorAll("input, select, textarea").forEach((field) => { field.disabled = !visible; });
+}
+function syncConditions() {
+  setConditional("foraneoFields", valueOf("routeType") === "outOfTown");
+  for (const side of ["origin", "destination"]) {
+    const floor = Number(valueOf(`${side}Floor`));
+    const access = document.getElementById(`${side}Access`);
+    if (floor === 0) { access.value = "ground"; access.disabled = true; }
+    else {
+      access.disabled = false;
+      if (access.value === "ground") access.value = "stairs";
+    }
+    const combined = floor > 0 && access.value === "combined";
+    setConditional(`${side}CombinedFields`, combined);
+    document.getElementById(`${side}ElevatorFloors`).max = String(Math.max(0, floor || 0));
+    setConditional(`${side}CarryFields`, valueOf(`${side}CarryRange`) === "over30");
   }
+  setConditional("boxFields", ["boxes", "partial", "full"].includes(valueOf("packingType")));
+  const ownPacking = valueOf("packingType") === "none";
+  setConditional("packingNotice", ownPacking);
+  document.getElementById("packingAcknowledged").required = ownPacking;
+  setConditional("hoistFields", valueOf("hoistService") === "yes");
 }
-
+function renderRooms() {
+  document.getElementById("roomGrid").innerHTML = ROOMS.map((room) => `
+    <article class="room-card" data-room-card="${room.id}">
+      <button class="room-card__view" type="button" data-room-view="${room.id}" aria-label="Ver muebles de ${room.label}"><span aria-hidden="true">${room.icon}</span><strong>${room.label}</strong></button>
+      <div class="quantity-control" aria-label="Número de ${room.label}">
+        <button type="button" data-room-action="decrease" data-room-id="${room.id}" aria-label="Quitar ${room.label}">−</button>
+        <output id="room-${room.id}" aria-live="polite">0</output>
+        <button type="button" data-room-action="increase" data-room-id="${room.id}" aria-label="Agregar ${room.label}">+</button>
+      </div>
+    </article>`).join("");
+  document.getElementById("roomTabs").innerHTML = [{ id: "all", label: "Todos los muebles" }, ...ROOMS, { id: "special", label: "Muebles especiales" }]
+    .map((room) => `<button type="button" class="room-tab" data-room-view="${room.id}" aria-pressed="${state.activeRoom === room.id}">${room.label}</button>`).join("");
+  updateRoomUI();
+}
+function updateRoomUI() {
+  ROOMS.forEach((room) => {
+    const count = state.rooms[room.id] || 0;
+    document.getElementById(`room-${room.id}`).value = count;
+    const card = document.querySelector(`[data-room-card="${room.id}"]`);
+    card.classList.toggle("is-selected", count > 0);
+    card.querySelector('[data-room-action="decrease"]').disabled = count === 0;
+    card.querySelector('[data-room-action="increase"]').disabled = count >= 20;
+  });
+  document.querySelectorAll("[data-room-view]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.roomView === state.activeRoom)));
+  const count = ROOMS.reduce((sum, room) => sum + (state.rooms[room.id] || 0), 0);
+  text("roomCountLabel", `${count} ${count === 1 ? "habitación / espacio" : "habitaciones / espacios"}`);
+}
+function normalizedSearch(value) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+function renderInventory() {
+  const search = normalizedSearch(valueOf("inventorySearch").trim());
+  const groups = FURNITURE.filter((group) => {
+    const inRoom = state.activeRoom === "all" || (state.activeRoom === "special" ? group.variants.some((item) => item.special) : group.roomIds.includes(state.activeRoom));
+    return inRoom && (!search || normalizedSearch([group.name, ...group.variants.map((item) => item.name)].join(" ")).includes(search));
+  });
+  document.getElementById("inventoryGrid").innerHTML = groups.length ? groups.map((group) => {
+    const variant = group.variants.find((item) => item.id === state.variants[group.id]) ?? group.variants[0];
+    state.variants[group.id] = variant.id;
+    return `<article class="inventory-item" data-group-id="${group.id}">
+      <span class="inventory-item__icon" aria-hidden="true">${group.icon}</span>
+      <div class="inventory-item__meta"><strong>${group.name}</strong>
+        <label class="variant-selector"><span class="sr-only">Tipo de ${group.name}</span><select data-variant-group="${group.id}" aria-label="Tipo de ${group.name}">${group.variants.map((item) => `<option value="${item.id}"${item.id === variant.id ? " selected" : ""}>${item.name}</option>`).join("")}</select></label>
+        ${variant.special ? '<small>Requiere revisión del equipo</small>' : ""}
+      </div>
+      <div class="quantity-control" aria-label="Cantidad de ${variant.name}">
+        <button type="button" data-quantity-action="decrease" data-item-id="${variant.id}" aria-label="Disminuir ${variant.name}">−</button>
+        <output data-quantity-for="${variant.id}" aria-live="polite">0</output>
+        <button type="button" data-quantity-action="increase" data-item-id="${variant.id}" aria-label="Aumentar ${variant.name}">+</button>
+      </div></article>`;
+  }).join("") : '<p class="empty-state">No hay coincidencias en esta categoría. Prueba en «Todos los muebles» o descríbelo en otros artículos.</p>';
+  updateInventoryUI();
+}
+function updateInventoryUI() {
+  document.querySelectorAll("[data-quantity-for]").forEach((output) => { output.value = state.inventory[output.dataset.quantityFor] || 0; });
+  document.querySelectorAll("[data-quantity-action]").forEach((button) => {
+    const count = state.inventory[button.dataset.itemId] || 0;
+    button.disabled = button.dataset.quantityAction === "decrease" ? count === 0 : count >= 99;
+  });
+  document.querySelectorAll("[data-group-id]").forEach((card) => {
+    const group = FURNITURE.find((entry) => entry.id === card.dataset.groupId);
+    card.classList.toggle("has-quantity", group.variants.some((item) => state.inventory[item.id] > 0));
+  });
+  const selected = ITEMS.filter((item) => state.inventory[item.id] > 0);
+  const count = selected.reduce((sum, item) => sum + state.inventory[item.id], 0);
+  text("itemCountLabel", `${count} ${count === 1 ? "artículo seleccionado" : "artículos seleccionados"}`);
+  document.getElementById("selectedInventory").innerHTML = selected.length ? selected.map((item) => `<div class="selected-inventory-row"><span><strong>${state.inventory[item.id]} ×</strong> ${item.name}${item.special ? ' <small>Especial</small>' : ""}</span><button type="button" class="text-button" data-remove-item="${item.id}" aria-label="Quitar todos: ${item.name}">Quitar</button></div>`).join("") : '<p class="empty-state">Tus muebles aparecerán aquí. Puedes agregar distintos tamaños del mismo tipo.</p>';
+  if (count || valueOf("customItems").trim()) text("inventoryError", "");
+}
+function accessText(fields, side) {
+  const floor = Number(fields[`${side}Floor`]) || 0;
+  const access = fields[`${side}Access`] || "ground";
+  const combined = access === "combined" ? ` (${fields[`${side}ElevatorFloors`] || 0} pisos por elevador, ${Math.max(0, floor - Number(fields[`${side}ElevatorFloors`] || 0))} por escaleras)` : "";
+  const carry = fields[`${side}CarryRange`] === "over30" && fields[`${side}CarryMeters`] ? `${fields[`${side}CarryMeters`]} m` : CARRY_RANGES[fields[`${side}CarryRange`]] || "Por confirmar";
+  return `${PROPERTY_TYPES[fields[`${side}Property`]] || "Por definir"} · ${floor === 0 ? "PB" : `Piso ${floor}`} · ${ACCESS_TYPES[access] || "Por confirmar"}${combined}. Acarreo: ${carry}. Traspaleo: ${answerLabels[fields[`${side}Shuttle`]] || "Por confirmar"}.`;
+}
+function modeText(fields) {
+  if (fields.routeType !== "outOfTown") return "Local";
+  return `Foránea · ${{ direct: "Directa", shared: "Compartida", undecided: "Modalidad por definir" }[fields.foraneoMode] || "Modalidad por definir"}`;
+}
+function servicesText(fields) {
+  const services = [packingLabels[fields.packingType] || packingLabels.undecided];
+  if (Number(fields.boxCount)) services.push(`${fields.boxCount} cajas por empacar`);
+  if (fields.hoistService === "yes") services.push(`Volados: ${fields.hoistUpFloors || 0} pisos de subida y ${fields.hoistDownFloors || 0} de bajada`);
+  else if (fields.hoistService === "unknown") services.push("Volados por confirmar");
+  services.push(`Traspaleo: ${answerLabels[fields.shuttleService] || "Por confirmar"}`);
+  if (Number(fields.assemblyCount)) services.push(`Desmontaje / montaje: ${fields.assemblyCount} muebles`);
+  if (Number(fields.storageDays)) services.push(`Bodega: ${fields.storageDays} días`);
+  if (Number(fields.extraLoaders)) services.push(`${fields.extraLoaders} cargadores adicionales solicitados`);
+  return services.join(" · ");
+}
+function summaryEntries(request) {
+  const f = request.fields;
+  return [
+    ["Ruta", `${f.origin || "Origen por definir"} → ${f.destination || "Destino por definir"}`],
+    ["Tipo de mudanza", modeText(f)],
+    ["Fecha", `${f.moveDate || "Por definir"}${f.dateFlexibility === "flexible" ? " · Flexible" : " · Fecha solicitada"}`],
+    ...(f.distanceKm ? [["Distancia aproximada", `${f.distanceKm} km`]] : []),
+    ["Acceso en origen", accessText(f, "origin")], ["Acceso en destino", accessText(f, "destination")],
+    ["Servicios", servicesText(f)],
+    ["Contacto", `${f.customerName || "Nombre por completar"} · ${f.phone || "Teléfono por completar"}${f.email ? ` · ${f.email}` : ""}`],
+    ["Preferencia de contacto", `${contactLabels[f.contactMethod] || "Por definir"} · ${windowLabels[f.contactWindow] || "Por definir"}`],
+    ...[["Otros artículos", f.customItems], ["Muebles especiales", f.specialNotes], ["Indicaciones", f.notes]].filter(([, value]) => value),
+  ];
+}
+function entriesHtml(entries) { return entries.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join(""); }
+function inventoryHtml(request) {
+  const rooms = ROOMS.filter((room) => request.rooms[room.id] > 0).map((room) => `${request.rooms[room.id]} × ${room.label}`).join(" · ");
+  const items = ITEMS.filter((item) => request.inventory[item.id] > 0);
+  return `<p><strong>Habitaciones:</strong> ${escapeHtml(rooms || "Por confirmar con el cliente")}</p><ul>${items.map((item) => `<li>${request.inventory[item.id]} × ${item.name}${item.special ? " · Revisión especial" : ""}</li>`).join("")}</ul>${!items.length ? '<p>Consulta los artículos descritos en la solicitud.</p>' : ""}`;
+}
+function refresh() {
+  syncConditions();
+  const draft = collectDraft();
+  const request = createRequest(draft, { id: "MF-BORRADOR", createdAt: new Date().toISOString() });
+  const f = request.fields;
+  text("summaryRoute", `${f.origin || "Origen"} → ${f.destination || "Destino"}`);
+  text("summaryMode", modeText(f));
+  text("summaryRooms", String(request.totals.totalRooms));
+  text("summaryItems", String(request.totals.totalItems));
+  text("summaryServices", servicesText(f));
+  document.getElementById("reviewSummary").innerHTML = entriesHtml(summaryEntries(request)) + `<div><dt>Habitaciones e inventario</dt><dd>${inventoryHtml(request)}</dd></div>`;
+  const warnings = [];
+  if (ITEMS.some((item) => item.special && state.inventory[item.id] > 0)) warnings.push("Los muebles especiales requieren confirmar medidas, peso, maniobras y viabilidad con el equipo.");
+  if (f.hoistService !== "no" || f.shuttleService !== "no" || ["origin", "destination"].some((side) => f[`${side}Shuttle`] !== "no")) warnings.push("El equipo validará los volados y el traspaleo. La distancia de acarreo por sí sola no confirma estas maniobras.");
+  if (f.customItems) warnings.push("Los artículos escritos en notas se revisarán con el equipo; no están incluidos en el contador de muebles.");
+  const warningElement = document.getElementById("requestWarnings");
+  warningElement.hidden = !warnings.length;
+  warningElement.innerHTML = warnings.map((warning) => `<p>${escapeHtml(warning)}</p>`).join("");
+  persistDraft(draft);
+}
+function persistDraft(draft = collectDraft()) {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ version: 1, ...draft, prepared: state.prepared }));
+    text("draftFeedback", state.draftWarning || "Borrador guardado en este navegador.");
+  } catch { text("draftFeedback", "No se pudo guardar el borrador en este navegador. Puedes completar y descargar la ficha."); }
+}
 function restoreDraft() {
   try {
-    const raw = localStorage.getItem("moveflow-quote-draft");
-    if (!raw) return;
-    const draft = JSON.parse(raw);
-    if (!draft?.fields) return;
-
+    const raw = localStorage.getItem(DRAFT_KEY);
+    const legacy = raw ? null : localStorage.getItem(LEGACY_KEY);
+    if (!raw && !legacy) return;
+    const source = JSON.parse(raw || legacy);
+    const draft = raw ? normalizeDraft(source) : migrateLegacyDraft(source);
+    state.rooms = { ...emptyCounts(ROOMS), ...draft.rooms };
+    state.inventory = { ...emptyCounts(ITEMS), ...draft.inventory };
+    if (raw && source.prepared?.id && typeof source.prepared.fingerprint === "string") state.prepared = source.prepared;
     Object.entries(draft.fields).forEach(([name, value]) => {
-      if (name === "services") return;
+      if (["privacyConsent", "packingAcknowledged"].includes(name)) return;
       const field = form.elements.namedItem(name);
-      if (!field) return;
-      if (field.type === "checkbox") field.checked = Boolean(value);
-      else field.value = value;
+      if (!field?.tagName) return;
+      if (field.type === "checkbox") field.checked = value === true;
+      else if (field.tagName === "SELECT") {
+        if ([...field.options].some((option) => option.value === String(value))) field.value = value;
+      } else field.value = value ?? "";
     });
-
-    (draft.fields.services ?? []).forEach((service) => {
-      const checkbox = form.querySelector(`input[name="service"][value="${service}"]`);
-      if (checkbox) checkbox.checked = true;
-    });
-
-    if (draft.inventory) {
-      state.inventory = { ...state.inventory, ...draft.inventory };
-    }
-    state.currentStep = Math.min(4, Math.max(1, Number(draft.currentStep) || 1));
-  } catch {
-    // Un borrador inválido se ignora de forma segura.
-  }
+    if (legacy) state.draftWarning = "Recuperamos los datos del cotizador anterior. Revisa las variantes de muebles y los accesos; ahora se prepara una solicitud sin precio automático.";
+  } catch { state.draftWarning = "No se pudo recuperar el borrador anterior. Puedes iniciar una nueva solicitud."; }
 }
-
-function resetQuote() {
-  form.reset();
-  state.inventory = Object.fromEntries(INVENTORY.map((item) => [item.id, 0]));
-  state.currentStep = 1;
-  clearPresetSelection();
-  setDefaultDate();
-  document.querySelectorAll(".field-error").forEach((error) => (error.textContent = ""));
-  document.querySelectorAll(".has-error").forEach((field) => field.classList.remove("has-error"));
-  try {
-    localStorage.removeItem("moveflow-quote-draft");
-  } catch {
-    // Sin acción necesaria.
-  }
-  updateInventoryUI();
-  showStep(1);
-}
-
 function setDefaultDate() {
-  const input = document.querySelector("#moveDate");
+  const dateString = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   const today = new Date();
-  const min = today.toISOString().slice(0, 10);
-  const defaultDate = new Date(today);
-  defaultDate.setDate(defaultDate.getDate() + 7);
-  input.min = min;
-  if (!input.value) input.value = defaultDate.toISOString().slice(0, 10);
+  document.getElementById("moveDate").min = dateString(today);
+  // El cliente elige la fecha; no se presupone disponibilidad.
 }
-
-function buildSummaryText() {
-  const quote = state.quote ?? calculateQuote();
-  const name = valueOf("customerName", "Cliente");
-  const route = `${valueOf("origin", "Origen pendiente")} → ${valueOf("destination", "Destino pendiente")}`;
-  const services = quote.services.length ? quote.services.map((service) => SERVICE_LABELS[service]).join(", ") : "Servicio estándar";
-
-  return [
-    "COTIZACIÓN PRELIMINAR · MOVEFLOW",
-    `Cliente: ${name}`,
-    `Ruta: ${route}`,
-    `Fecha: ${valueOf("moveDate", "Por definir")}`,
-    `Distancia: ${quote.distance} km`,
-    `Inventario: ${quote.totalItems} artículos · ${quote.totalVolume.toFixed(1)} m³`,
-    `Unidad sugerida: ${quote.vehicle}`,
-    `Servicios: ${services}`,
-    `Rango estimado: ${formatMoney(quote.low)} — ${formatMoney(quote.high)} MXN`,
-    "Nota: precio sujeto a validación de volumen, accesos y disponibilidad.",
-  ].join("\n");
-}
-
-function openQuoteModal() {
-  const quote = state.quote ?? calculateQuote();
-  document.querySelector("#modalRange").textContent = `${formatMoney(quote.low)} — ${formatMoney(quote.high)} MXN`;
-  document.querySelector("#modalSummary").innerHTML = `
-    <div><span>Cliente</span><strong>${escapeHtml(valueOf("customerName"))}</strong></div>
-    <div><span>Fecha</span><strong>${escapeHtml(valueOf("moveDate"))}</strong></div>
-    <div><span>Ruta</span><strong>${escapeHtml(valueOf("origin"))} → ${escapeHtml(valueOf("destination"))}</strong></div>
-    <div><span>Unidad sugerida</span><strong>${escapeHtml(quote.vehicle)}</strong></div>
-    <div><span>Artículos</span><strong>${quote.totalItems}</strong></div>
-    <div><span>Volumen</span><strong>${quote.totalVolume.toFixed(1)} m³</strong></div>
-  `;
-  quoteModal.classList.add("is-open");
-  quoteModal.setAttribute("aria-hidden", "false");
-  document.body.style.overflow = "hidden";
-  document.querySelector("#closeModal").focus();
-}
-
-function closeQuoteModal() {
-  quoteModal.classList.remove("is-open");
-  quoteModal.setAttribute("aria-hidden", "true");
-  document.body.style.overflow = "";
-}
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>'"]/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "'": "&#39;",
-    '"': "&quot;",
-  })[character]);
-}
-
-async function copySummary() {
-  const feedback = document.querySelector("#copyFeedback");
-  const summary = buildSummaryText();
-
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(summary);
-    } else {
-      const temporary = document.createElement("textarea");
-      temporary.value = summary;
-      temporary.setAttribute("readonly", "");
-      temporary.style.position = "fixed";
-      temporary.style.opacity = "0";
-      document.body.appendChild(temporary);
-      temporary.select();
-      const copied = document.execCommand("copy");
-      temporary.remove();
-      if (!copied) throw new Error("No se pudo copiar");
-    }
-    feedback.textContent = "Resumen copiado al portapapeles.";
-  } catch {
-    feedback.textContent = "No se pudo copiar automáticamente. Usa Imprimir / guardar PDF.";
+function setError(field, message = "") {
+  if (!field.id) return;
+  const container = field.closest(".field, .compact-field, .consent-field");
+  let error = document.querySelector(`[data-error-for="${field.id}"]`);
+  if (!error && message && container) {
+    error = document.createElement("small"); error.className = "field-error"; error.dataset.errorFor = field.id; container.appendChild(error);
+  }
+  field.setAttribute("aria-invalid", String(Boolean(message)));
+  container?.classList.toggle("has-error", Boolean(message));
+  if (error) {
+    error.id = `error-${field.id}`; error.textContent = message;
+    field.setAttribute("aria-describedby", [...new Set(`${field.getAttribute("aria-describedby") || ""} ${error.id}`.trim().split(/\s+/))].join(" "));
   }
 }
-
-inventoryGrid.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-quantity-action]");
-  if (!button) return;
-  const id = button.dataset.itemId;
-  const delta = button.dataset.quantityAction === "increase" ? 1 : -1;
-  state.inventory[id] = Math.max(0, Math.min(99, (state.inventory[id] || 0) + delta));
-  clearPresetSelection();
-  updateInventoryUI();
-  calculateQuote();
-});
-
-document.querySelectorAll(".preset-card").forEach((card) => {
-  card.addEventListener("click", () => applyPreset(card.dataset.preset));
-});
-
-document.querySelector("#clearInventory").addEventListener("click", clearInventory);
-document.querySelector("#resetQuote").addEventListener("click", resetQuote);
-
-nextButton.addEventListener("click", () => {
-  if (validateStep(state.currentStep)) showStep(state.currentStep + 1);
-});
-
-prevButton.addEventListener("click", () => showStep(state.currentStep - 1));
-
-stepperItems.forEach((item) => {
-  item.addEventListener("click", () => {
-    const target = Number(item.dataset.goStep);
-    if (target <= state.currentStep || validateStep(state.currentStep)) showStep(target);
+function validateStep(step) {
+  const current = document.querySelector(`.form-step[data-step="${step}"]`);
+  let valid = true;
+  current.querySelectorAll("input, select, textarea").forEach((field) => {
+    if (field.disabled) { setError(field); return; }
+    let error = "";
+    if (field.type === "checkbox") { if (field.required && !field.checked) error = "Confirma esta condición para continuar."; }
+    else if (field.required && !field.value.trim()) error = "Completa este campo para continuar.";
+    else if (field.type === "number" && field.validity.badInput) error = "Ingresa un número completo y válido.";
+    else if (field.type === "number" && field.value && !field.validity.valid) error = `Usa un número entero entre ${field.min || 0} y ${field.max}.`;
+    else if (field.type === "date" && field.value && !field.validity.valid) error = "Elige una fecha de hoy en adelante.";
+    else if (field.id === "phone" && (field.value.replace(/\D/g, "").length < 10 || field.value.replace(/\D/g, "").length > 15)) error = "Ingresa un teléfono de 10 a 15 dígitos, incluyendo lada si corresponde.";
+    else if (field.type === "email" && field.value && !field.validity.valid) error = "Ingresa un correo válido o deja este campo vacío.";
+    setError(field, error); if (error) valid = false;
   });
-});
+  if (step === 2 && !ITEMS.some((item) => state.inventory[item.id] > 0) && !valueOf("customItems").trim()) {
+    text("inventoryError", "Agrega al menos un artículo o describe los muebles que necesitas transportar."); valid = false;
+  }
+  return valid;
+}
+function focusError(step) {
+  const field = document.querySelector(`.form-step[data-step="${step}"] [aria-invalid="true"]`);
+  if (field) field.focus();
+  else if (step === 2) { const error = document.getElementById("inventoryError"); error.tabIndex = -1; error.focus(); }
+}
+function showStep(step, scroll = true) {
+  state.step = Math.max(1, Math.min(4, step));
+  document.querySelectorAll(".form-step").forEach((section) => section.classList.toggle("is-active", Number(section.dataset.step) === state.step));
+  document.querySelectorAll("[data-go-step]").forEach((button) => {
+    const active = Number(button.dataset.goStep) === state.step;
+    button.classList.toggle("is-active", active); button.classList.toggle("is-complete", Number(button.dataset.goStep) < state.step);
+    if (active) button.setAttribute("aria-current", "step"); else button.removeAttribute("aria-current");
+  });
+  document.getElementById("prevStep").classList.toggle("is-hidden", state.step === 1);
+  document.getElementById("nextStep").classList.toggle("is-hidden", state.step === 4);
+  document.getElementById("submitQuote").classList.toggle("is-hidden", state.step !== 4);
+  refresh();
+  if (scroll) document.querySelector(".quote-card").scrollIntoView({ block: "start", behavior: "instant" });
+}
+function navigateTo(target) {
+  if (target > state.step) for (let step = 1; step < target; step++) {
+    if (!validateStep(step)) { showStep(step); focusError(step); return; }
+  }
+  showStep(target);
+}
+function resetDraft() {
+  form.reset(); state.rooms = emptyCounts(ROOMS); state.inventory = emptyCounts(ITEMS); state.prepared = null; state.request = null; state.draftWarning = ""; state.activeRoom = "all";
+  document.querySelectorAll(".field-error").forEach((error) => { error.textContent = ""; });
+  form.querySelectorAll("[aria-invalid]").forEach((field) => setError(field));
+  renderRooms(); renderInventory(); setDefaultDate(); showStep(1);
+}
+function draftFingerprint(draft) {
+  const normalized = normalizeDraft(draft);
+  return JSON.stringify({ ...normalized, fields: { ...normalized.fields, privacyConsent: true, packingAcknowledged: normalized.fields.packingType === "none" } });
+}
+function prepareRequest() {
+  const draft = collectDraft();
+  // Consentimientos se validan siempre, pero no cambian la identidad de una ficha ya preparada.
+  const fingerprint = draftFingerprint(draft);
+  let request;
+  let storageError = "";
+  try {
+    if (state.prepared?.fingerprint === fingerprint) request = loadRequests().find((entry) => entry.id === state.prepared.id && draftFingerprint(entry) === fingerprint);
+  } catch (error) { storageError = error.message; }
+  request ??= createRequest(draft);
+  try { saveRequest(request); state.prepared = { id: request.id, fingerprint }; }
+  catch (error) { storageError = error.message; }
+  state.request = request;
+  text("modalTitle", "Solicitud preparada");
+  persistDraft(draft);
+  text("requestReference", request.id);
+  document.getElementById("modalSummary").innerHTML = entriesHtml(summaryEntries(request));
+  document.getElementById("modalInventory").innerHTML = inventoryHtml(request);
+  text("submissionStatus", storageError ? `Ficha preparada, pero no guardada: ${storageError}. Descárgala o cópiala. No se ha enviado al negocio.` : "Ficha guardada en este navegador. Revisa los detalles y elige cómo enviarla al equipo. Prepararla aquí no la envía.");
+  const fullMessage = buildRequestText(request);
+  const shortMessage = `SOLICITUD DE MUDANZA · ${request.id}\n${summaryEntries(request).filter(([label]) => ["Ruta", "Tipo de mudanza", "Fecha", "Contacto", "Preferencia de contacto"].includes(label)).map(([label, value]) => `${label}: ${value}`).join("\n")}\nInventario: ${request.totals.totalItems} artículos.\nMe gustaría que revisaran mi mudanza para acordar una propuesta. Compartiré la ficha completa por este chat.`;
+  const message = fullMessage.length > 6000 ? shortMessage : fullMessage;
+  const share = document.getElementById("shareWhatsApp");
+  share.href = buildWhatsAppUrl(message);
+  share.textContent = `Enviar al negocio por WhatsApp`;
+  if (fullMessage.length > 6000) text("submissionStatus", `${document.getElementById("submissionStatus").textContent} El mensaje se resumió por su extensión; comparte también la ficha completa con Copiar o Descargar.`);
+  text("copyFeedback", "");
+  cloudState.sentReference = null;
+  text("cloudSendStatus", "");
+  updateCloudControls();
+  modalTrigger = document.activeElement;
+  modal.classList.add("is-open"); modal.setAttribute("aria-hidden", "false");
+  document.querySelector(".page-shell").inert = true; document.body.style.overflow = "hidden";
+  document.getElementById("closeModal").focus();
+}
 
+function updateCloudControls() {
+  const ready = isCloudConfigured && LEGAL_READY && cloudState.settings?.accepting_requests === true;
+  const loggedIn = Boolean(cloudState.session);
+  const authLink = document.getElementById("requestAccountLink");
+  authLink.href = loggedIn ? "./panel.html" : accountUrl("index.html#retomar");
+  authLink.textContent = loggedIn ? "Ver mi cuenta" : "Entrar o crear mi cuenta";
+  text("requestAccountStatus", !ready ? "Estamos preparando el registro y la recepción en línea. Por ahora puedes revisar tu ficha y compartirla con el negocio por WhatsApp." : loggedIn ? "Tu sesión está activa. Revisa tu ficha y pulsa «Enviar al equipo» para guardarla en tu cuenta." : "Crea una cuenta gratuita para enviar tu solicitud y consultar su seguimiento desde cualquier dispositivo.");
+  document.getElementById("networkConsentField").hidden = !(ready && cloudState.settings?.network_enabled === true);
+  if (document.getElementById("networkConsentField").hidden) document.getElementById("networkConsent").checked = false;
+  const button = document.getElementById("sendCloudRequest");
+  button.hidden = !ready;
+  button.disabled = cloudState.sending || cloudState.sentReference === state.request?.id;
+  button.textContent = cloudState.sending ? "Enviando…" : cloudState.sentReference === state.request?.id ? "Solicitud enviada" : loggedIn ? "Enviar al equipo" : "Entrar para enviar";
+  text("cloudAvailability", ready ? "Al enviar, el equipo recibirá una notificación en su panel. El precio y la disponibilidad se acuerdan directamente." : "La recepción en línea todavía no está activa. La ficha solo llega al negocio si tú la compartes por WhatsApp.");
+}
+
+async function loadCloudState() {
+  try {
+    const [session, settings] = await Promise.all([getSession(), getPublicSettings()]);
+    cloudState = { ...cloudState, session, settings };
+  } catch { cloudState.settings = null; }
+  updateCloudControls();
+}
+
+async function sendCloudRequest() {
+  if (!state.request || cloudState.sending || cloudState.sentReference === state.request.id) return;
+  if (!isCloudConfigured || !LEGAL_READY || !cloudState.settings?.accepting_requests) return;
+  if (!cloudState.session) { window.location.href = accountUrl("index.html#retomar"); return; }
+  cloudState.sending = true;
+  updateCloudControls();
+  text("cloudSendStatus", "Enviando la solicitud…");
+  try {
+    const networkConsent = cloudState.settings.network_enabled === true && checked("networkConsent");
+    const payload = { ...state.request, fields: { ...state.request.fields, networkConsent } };
+    await submitCloudRequest(payload, networkConsent ? "network" : "family");
+    cloudState.sentReference = state.request.id;
+    text("cloudSendStatus", "Solicitud recibida. El equipo tiene una notificación en su panel y podrá contactarte. Consulta el seguimiento en tu cuenta.");
+    text("submissionStatus", "Tu solicitud está guardada en tu cuenta. Enviar la ficha no reserva la mudanza ni fija un precio.");
+    text("modalTitle", "Solicitud enviada");
+  } catch (error) {
+    text("cloudSendStatus", cloudErrorMessage(error, "No pudimos confirmar la recepción. Reintenta con esta misma ficha; no se duplicará si ya fue recibida."));
+  } finally { cloudState.sending = false; updateCloudControls(); }
+}
+function closeModal() {
+  modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true");
+  document.querySelector(".page-shell").inert = false; document.body.style.overflow = ""; modalTrigger?.focus();
+}
+async function copyRequest() {
+  if (!state.request) return;
+  try {
+    const message = buildRequestText(state.request);
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(message);
+    else {
+      const input = document.createElement("textarea"); input.value = message; input.style.position = "fixed"; input.style.opacity = "0"; modal.appendChild(input); input.select();
+      const copied = document.execCommand("copy"); input.remove(); if (!copied) throw new Error("No se pudo copiar");
+    }
+    text("copyFeedback", "Ficha copiada. Pégala en el mensaje que enviarás al negocio.");
+  } catch { text("copyFeedback", "No se pudo copiar. Puedes descargar o imprimir la ficha."); }
+}
+function downloadRequest() {
+  if (!state.request) return;
+  const blob = new Blob([JSON.stringify(state.request, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob); const link = document.createElement("a");
+  link.href = url; link.download = `solicitud-${state.request.id}.json`; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  text("copyFeedback", "Archivo preparado para descargar. Se puede importar en el panel de pruebas del negocio.");
+}
+
+form.addEventListener("click", (event) => {
+  const roomView = event.target.closest("[data-room-view]");
+  if (roomView) { state.activeRoom = roomView.dataset.roomView; document.getElementById("inventorySearch").value = ""; updateRoomUI(); renderInventory(); return; }
+  const roomAction = event.target.closest("[data-room-action]");
+  if (roomAction) {
+    const id = roomAction.dataset.roomId; const delta = roomAction.dataset.roomAction === "increase" ? 1 : -1;
+    state.rooms[id] = Math.max(0, Math.min(20, (state.rooms[id] || 0) + delta));
+    if (delta > 0) { state.activeRoom = id; renderInventory(); }
+    updateRoomUI(); refresh(); return;
+  }
+  const quantity = event.target.closest("[data-quantity-action]");
+  if (quantity) {
+    const id = quantity.dataset.itemId; const delta = quantity.dataset.quantityAction === "increase" ? 1 : -1;
+    state.inventory[id] = Math.max(0, Math.min(99, (state.inventory[id] || 0) + delta)); updateInventoryUI(); refresh(); return;
+  }
+  const remove = event.target.closest("[data-remove-item]");
+  if (remove) { state.inventory[remove.dataset.removeItem] = 0; updateInventoryUI(); refresh(); }
+});
 form.addEventListener("input", (event) => {
-  if (event.target.id) setFieldError(event.target, "");
-  calculateQuote();
+  if (event.target.id === "inventorySearch") { renderInventory(); return; }
+  setError(event.target); refresh();
 });
-
-form.addEventListener("change", calculateQuote);
-
+form.addEventListener("change", (event) => {
+  if (event.target.dataset.variantGroup) {
+    state.variants[event.target.dataset.variantGroup] = event.target.value; renderInventory();
+    document.querySelector(`[data-variant-group="${event.target.dataset.variantGroup}"]`)?.focus(); return;
+  }
+  setError(event.target); refresh();
+});
+document.getElementById("clearInventory").addEventListener("click", () => { state.inventory = emptyCounts(ITEMS); updateInventoryUI(); refresh(); });
+document.getElementById("resetQuote").addEventListener("click", resetDraft);
+document.getElementById("nextStep").addEventListener("click", () => navigateTo(state.step + 1));
+document.getElementById("prevStep").addEventListener("click", () => navigateTo(state.step - 1));
+document.querySelectorAll("[data-go-step]").forEach((button) => button.addEventListener("click", () => navigateTo(Number(button.dataset.goStep))));
 form.addEventListener("submit", (event) => {
   event.preventDefault();
-  if (!validateStep(4)) return;
-  calculateQuote();
-  openQuoteModal();
+  for (let step = 1; step <= 4; step++) if (!validateStep(step)) { showStep(step); focusError(step); return; }
+  prepareRequest();
 });
-
-document.querySelector("#closeModal").addEventListener("click", closeQuoteModal);
-document.querySelector("#printQuote").addEventListener("click", () => window.print());
-document.querySelector("#copyQuote").addEventListener("click", copySummary);
-quoteModal.addEventListener("click", (event) => {
-  if (event.target === quoteModal) closeQuoteModal();
-});
-
+document.getElementById("closeModal").addEventListener("click", closeModal);
+document.getElementById("sendCloudRequest").addEventListener("click", sendCloudRequest);
+document.getElementById("copyQuote").addEventListener("click", copyRequest);
+document.getElementById("downloadRequest").addEventListener("click", downloadRequest);
+document.getElementById("printQuote").addEventListener("click", () => window.print());
+modal.addEventListener("click", (event) => { if (event.target === modal) closeModal(); });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && quoteModal.classList.contains("is-open")) closeQuoteModal();
+  if (!modal.classList.contains("is-open")) return;
+  if (event.key === "Escape") closeModal();
+  if (event.key === "Tab") {
+    const controls = [...modal.querySelectorAll("button, a[href]")].filter((control) => !control.disabled && control.getClientRects().length);
+    if (event.shiftKey && document.activeElement === controls[0]) { event.preventDefault(); controls.at(-1).focus(); }
+    else if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
+  }
 });
-
-renderInventory();
-setDefaultDate();
-restoreDraft();
-setDefaultDate();
-updateInventoryUI();
-showStep(state.currentStep, false);
-document.querySelector("#currentYear").textContent = String(new Date().getFullYear());
+state.rooms = emptyCounts(ROOMS); state.inventory = emptyCounts(ITEMS);
+restoreDraft(); setDefaultDate(); renderRooms(); renderInventory(); showStep(1, false);
+text("currentYear", String(new Date().getFullYear()));
+text("businessContact", BUSINESS.displayPhone);
+text("businessName", BUSINESS.name);
+if (location.hash === "#retomar") showStep(4);
+loadCloudState();

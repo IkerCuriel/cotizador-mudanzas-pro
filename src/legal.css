@@ -1,0 +1,14 @@
+@import './styles.css';
+body { background: #f7f5ef; }
+.legal-header { display:flex; justify-content:space-between; align-items:center; max-width:900px; padding:28px; margin:auto; }
+.legal-header a { color:#142536; font-weight:700; }
+.legal-header span { font-size:13px; font-weight:400; margin-left:12px; }
+.legal-page { max-width:840px; margin:20px auto 80px; padding:44px; background:white; border:1px solid #deded5; border-radius:20px; color:#243b4c; }
+.legal-page h1 { font-family:Georgia,serif; font-weight:400; font-size:clamp(36px,5vw,50px); line-height:1.1; margin:18px 0 32px; }
+.legal-page h2 { font-size:21px; margin:32px 0 14px; }
+.legal-page p,.legal-page dd { line-height:1.8; margin:12px 0; }
+.legal-page dt { font-weight:700; margin-top:14px; }
+.legal-page a { color:#834421; text-decoration:underline; }
+.legal-status { background:#fff0dc; border-left:3px solid #ce7334; padding:16px; }
+.legal-footnote { font-size:13px; color:#5e6e75; padding-top:20px; border-top:1px solid #ddd; }
+@media(max-width:600px) { .legal-page { margin:0 14px 36px; padding:24px; } }

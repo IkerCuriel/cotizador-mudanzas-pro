@@ -4,11 +4,25 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "test": "node --test",
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "test:db": "node --test tests/backend.integration.test.js",
+    "social:preview": "node scripts/social-preview.mjs",
+    "check:launch": "node scripts/check-launch.mjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.13",
+    "sharp": "^0.35.5",
     "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@supabase/supabase-js": "^2.118.0"
+  },
+  "engines": {
+    "node": ">=22.14.0"
   }
 }
