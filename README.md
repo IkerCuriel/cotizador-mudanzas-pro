@@ -14,6 +14,14 @@ El piloto público se aloja en [MoveFlow Mudanzas](https://moveflow-mudanzas.ren
 
 El piloto no cobra suscripciones. La futura membresía será para los **mudanceros que reciben oportunidades**; quien solicita una mudanza tendrá una cuenta gratuita. No se garantizan contrataciones, ingresos ni un número de solicitudes.
 
+## Arquitectura por negocio
+
+Cada negocio tiene una identidad separada de las cuentas de su equipo. D’Curiel usa `d-curiel`; Tere y Marco conservarán accesos individuales. Una solicitud se dirige a **un negocio**, no a todos los mudanceros. La cuarta migración prepara aislamiento, membresías, cupos y asignaciones acotadas; no crea cuentas de Auth ni activa servicios por sí sola.
+
+El panel consulta 20 resúmenes por página y carga la ficha completa al seleccionarla. La navegación usa un cursor; no hay una consulta automática cada minuto por cada usuario. Las notificaciones se conservan en la base y los avisos al dispositivo siguen siendo opcionales. El uso masivo necesita pruebas de carga y presupuesto: no se garantiza una operación gratuita con millones de usuarios.
+
+Consulta la [arquitectura, flujo de datos y costos](docs/arquitectura-y-costos.md) y el [contrato del backend](docs/backend.md). Los cobros futuros pertenecerán al negocio, con verificación en servidor; todavía no hay una pasarela ni suscripciones activas.
+
 ## Perfiles de acceso
 
 | Perfil | Finalidad |
@@ -69,6 +77,7 @@ Los avisos del panel y el canal Web Push están implementados, pero no activos e
 
 ## Documentación vigente
 
+- [Arquitectura por negocio, flujo de datos y costos](docs/arquitectura-y-costos.md).
 - [Lanzamiento, infraestructura, cuentas y costos](docs/lanzamiento.md).
 - [Operación, privacidad y preparación comercial](docs/operacion-y-privacidad.md).
 - [Manual del propietario: publicar, pausar y recuperar](docs/control-y-recuperacion.md).

@@ -7,6 +7,7 @@ export const ADVISORS = Object.freeze([
 
 // Una sola atención comercial: Tere recibe el contacto inicial de D’Curiel.
 export const BUSINESS = {
+  slug: "d-curiel",
   name: import.meta.env?.VITE_BUSINESS_NAME || "Mudanzas D’Curiel",
   whatsapp: ADVISORS[0].whatsapp,
   displayPhone: ADVISORS[0].displayPhone,

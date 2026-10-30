@@ -2,7 +2,21 @@
 
 Se implementó Supabase Auth + PostgreSQL con permisos en la base de datos. La página usa únicamente la URL y la clave pública de Supabase; no requiere ni debe incluir una clave `service_role`. **La nube de producción, las cuentas y los avisos al teléfono siguen pendientes de activación.** Las migraciones no publican servicios, crean cuentas reales ni envían mensajes por sí solas.
 
-Aplicar en orden `202610300001_platform.sql` (cuentas y solicitudes), `202610300002_family_team_security.sql` (varios asesores familiares y segundo factor) y `202610300003_push_notifications.sql` (dispositivos y cola de avisos). No volver a ejecutar migraciones ya aplicadas ni reinicializar una base con datos reales.
+Aplicar en orden `202610300001_platform.sql` (cuentas y solicitudes), `202610300002_family_team_security.sql` (varios asesores familiares y segundo factor) `202610300003_push_notifications.sql` (dispositivos y cola de avisos) y `202610300004_business_routing.sql` (negocios, equipos y cuotas). No volver a ejecutar migraciones ya aplicadas ni reinicializar una base con datos reales.
+
+## Destino por negocio y costo acotado
+
+La migración 004 crea `businesses`, `business_memberships` y el contador privado `business_monthly_usage`; añade `business_id` a cada solicitud directa. D’Curiel tiene el identificador `d-curiel`. Este registro comercial no crea cuentas Auth ni acredita una verificación legal: la recepción global sigue cerrada y requiere integrantes aprobados con correo confirmado y segundo factor.
+
+Cada solicitud se guarda una sola vez. El servidor resuelve hasta **10 integrantes activos** del negocio; crea asignaciones y avisos dentro de la misma transacción. Solo el personal asignado, aún autorizado y vigente, puede consultar la ficha. Agregar un integrante después no le concede solicitudes anteriores. Suspender el negocio o retirar la membresía revoca lecturas y la elegibilidad de los avisos pendientes.
+
+El cupo inicial del piloto es **300 solicitudes por mes UTC por negocio**, configurable por administración en servidor; no es una oferta comercial ni un cobro. Un reintento idéntico no vuelve a consumir cuota. Cancelar no libera cuota. Sin destinatarios, toda la operación se revierte. La base bloquea la fila del negocio durante la asignación y el consumo para serializar esos cambios; las pruebas locales no sustituyen una prueba de concurrencia con conexiones reales.
+
+`submit_request(..., 'family', ...)` conserva compatibilidad hacia D’Curiel. `network` falla explícitamente incluso si se cambia el antiguo interruptor: no existe difusión a todos los mudanceros. El frontend actual solicita `submit_business_request` con un destino fijo; el catálogo y las páginas públicas de otros negocios quedan para otra etapa. `public_site_config` publica `business_routing_version=1`, requisito de esta web para ofrecer el guardado en línea.
+
+Para incorporar otro negocio por administración, revisar `supabase/operations/setup-business.sql`. Sus valores vacíos abortan por defecto y requiere identidades verificadas. No se debe pegar una dirección de correo como si fuera el UUID de Auth ni otorgar pertenencia por nombre comercial.
+
+La lista del panel proyecta solo nombre, ruta y fecha, hasta 20 filas más una para decidir si existe otra página, con cursor `(created_at,id)` e índices de negocio/propietario. La ficha completa se carga al seleccionar. La bandeja de proveedores se delimita por negocio y la del cliente por propietario antes de RLS. No se mantiene una consulta periódica por cada usuario; actualización manual o al regresar a la pestaña con límite temporal. Las listas administrativas todavía muestran solo las primeras 100 cuentas y requieren una búsqueda/paginación administrativa antes de operación masiva.
 
 ## Qué funciona al conectar Supabase
 
@@ -41,7 +55,7 @@ El archivo abre una transacción, crea usuarios sintéticos, cambia al rol `auth
 2. Copiar el UUID de esa cuenta verificada.
 3. Revisar `supabase/bootstrap-owner.sql`, reemplazar el UUID vacío y ejecutarlo en SQL Editor con el rol `postgres`. El archivo se detiene si ya hay un superusuario; no existe un botón público para crear otro.
 4. Invitar a Tere y Marco con correos individuales siguiendo [seguridad y cuentas](seguridad-y-cuentas.md). Cada persona acepta el aviso, elige su contraseña, solicita acceso mediante `join_provider` y configura su autenticador. No usar la cuenta de superusuario como cuenta de asesor ni compartir contraseñas.
-5. Como superusuario, verificar el segundo factor y aprobar por separado ambas cuentas con plan piloto, fecha de vencimiento y pertenencia al equipo familiar (`is_family=true`). La migración 002 sustituye el destinatario único anterior por varios miembros. Los administradores pueden aprobar/vencer planes, pero solo el superusuario cambia la pertenencia familiar. Agregar un asesor no le asigna solicitudes anteriores.
+5. Como superusuario, verificar el segundo factor y aprobar por separado ambas cuentas con plan piloto, fecha de vencimiento y pertenencia al equipo familiar (`is_family=true`). La migración 002 sustituye el destinatario único anterior por varios miembros. La 004 sincroniza ese permiso con la membresía de D’Curiel, sin asignar pertenencia a otras empresas. Los administradores pueden aprobar/vencer planes, pero solo el superusuario cambia la pertenencia familiar. Agregar un asesor no le asigna solicitudes anteriores.
 6. Completar nombre y domicilio del responsable, contacto para privacidad, aviso y consentimiento en la página. Revisar los datos reales y las finalidades antes de habilitar recepción.
 7. Solo entonces activar recepción en SQL Editor:
 
@@ -60,7 +74,9 @@ Todas las lecturas están protegidas por RLS. Para el equipo, consultar solicitu
 | Tabla | Datos principales | Lectura |
 | --- | --- | --- |
 | `profiles` | `id`, `role`, `display_name`, `phone`, `company_name`, `provider_status`, `plan_code`, `plan_expires_at`, `is_family` | Perfil propio; operadores pueden leer todos |
-| `move_requests` | `id` UUID, `reference`, `owner_id`, `payload`, `audience`, `status`, `privacy_version`, fechas | Dueño; operadores; empresa asignada con aprobación y plan vigentes |
+| `businesses` | `id`, `slug`, `name`, `whatsapp`, `status`, `plan_code`, `monthly_request_limit` | Integrantes autorizados y operadores; no escritura pública |
+| `business_memberships` | `business_id`, `user_id`, `member_role`, `active` | Pertenencia propia autorizada y operadores; no autoasignación |
+| `move_requests` | `business_id`, `id` UUID, `reference`, `owner_id`, `payload`, `audience`, `status`, `privacy_version`, fechas | Dueño; operadores; empresa asignada con aprobación y plan vigentes |
 | `request_recipients` | `request_id`, `provider_id`, `created_at` | Operadores; empresa asignada todavía autorizada |
 | `notifications` | `id`, `user_id`, `request_id`, `title`, `read_at`, `created_at` | Solo destinatario; el título no contiene datos del cliente |
 | `push_devices` | Dispositivo, endpoint, claves de suscripción, vigencia | Solo dispositivos propios del equipo con acceso autorizado y segundo factor |
@@ -69,8 +85,10 @@ Los campos `role`, `provider_status`, `plan_code`, `plan_expires_at` e `is_famil
 
 | RPC | Parámetros | Resultado / permiso |
 | --- | --- | --- |
-| `public_site_config` | Ninguno | Objeto `{accepting_requests, network_enabled, privacy_version}`; público, sin datos personales |
-| `submit_request` | `p_reference`, `p_payload`, `p_audience='family'`, `p_privacy_version='2026-10-30'` | Fila `move_requests`; cuenta con correo confirmado |
+| `public_site_config` | Ninguno | Objeto `{accepting_requests, network_enabled:false, privacy_version, default_business_slug, business_routing_version:1}`; público, sin datos personales |
+| `submit_business_request` | `p_reference`, `p_payload`, `p_business_slug='d-curiel'`, `p_privacy_version` | Solicitud directa atómica; cuenta verificada, negocio habilitado, cuota y equipo disponible |
+| `get_my_businesses` | Ninguno | Hasta 20 negocios autorizados; equipo con segundo factor |
+| `submit_request` | `p_reference`, `p_payload`, `p_audience='family'`, `p_privacy_version='2026-10-30'` | Compatibilidad familiar hacia D’Curiel; la red general se rechaza |
 | `join_provider` | `p_company_name` | Perfil; convierte solicitante en empresa pendiente, no concede acceso a contactos |
 | `set_provider_access` | `p_user_id`, `p_status`, `p_expires_at`, `p_is_family=false` | Perfil; administrador o superusuario. Solo superusuario cambia `is_family` |
 | `set_user_role` | `p_user_id`, `p_role` | Perfil; solo superusuario, destino `applicant`, `provider` o `admin`. Nunca crea otro superusuario ni modifica uno existente |

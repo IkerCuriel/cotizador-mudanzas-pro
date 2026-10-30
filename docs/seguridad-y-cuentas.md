@@ -50,9 +50,10 @@ MOVEFLOW_SITE_URL=https://TU-DOMINIO
 MOVEFLOW_TERE_EMAIL=
 MOVEFLOW_MARCO_EMAIL=
 MOVEFLOW_PRIVACY_READY=false
+MOVEFLOW_EMAILS_CONFIRMED=false
 ```
 
-La clave es una clave secreta de servidor `sb_secret_…` o una `service_role` legada. No es la clave pública del navegador. Usa dos correos distintos y activa `MOVEFLOW_PRIVACY_READY=true` solamente cuando el aviso esté completo y publicado. El retorno `/cuenta.html?mode=invite` debe estar permitido en Supabase. No se modifica la configuración pública al cambiar este archivo.
+La clave es una clave secreta de servidor `sb_secret_…` o una `service_role` legada. No es la clave pública del navegador. Los correos provisionales proporcionados por el propietario se conservan solo en `.env.invites.local`, excluido de Git y con permisos privados. No son cuentas creadas, credenciales verificadas ni direcciones autorizadas para enviar correo. Sustitúyelos por direcciones que controle cada titular y marca `MOVEFLOW_EMAILS_CONFIRMED=true` solo después de comprobarlo. El script bloquea el envío mientras esta confirmación falte. Usa dos correos distintos y activa `MOVEFLOW_PRIVACY_READY=true` solamente cuando el aviso esté completo y publicado. El retorno `/cuenta.html?mode=invite` debe estar permitido en Supabase. No se modifica la configuración pública al cambiar este archivo.
 
 En la terminal del proyecto:
 

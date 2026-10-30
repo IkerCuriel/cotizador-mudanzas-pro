@@ -6,6 +6,8 @@ La web pública presenta una sola atención, **Mudanzas D’Curiel**, sin tarjet
 
 La [guía de WhatsApp del negocio](whatsapp-negocio.md) describe el funcionamiento actual y las dos opciones siguientes: vincular un teléfono de Marco a la misma cuenta de WhatsApp Business de Tere, o construir una integración de servidor con WhatsApp Business Platform para avisar a dos números independientes. Esta integración no está implementada ni activada; es distinta del canal Web Push de esta guía.
 
+La migración 004 añade la comprobación de negocio y membresía vigente antes de consultar o enviar avisos. Una notificación pertenece a una solicitud y a un integrante asignado, no a toda la red. El panel muestra las 50 más recientes; su contador no pretende contar todo el historial.
+
 ## Qué verá cada asesor
 
 Desde su propia cuenta, después de verificar su correo y segundo factor, podrá pulsar **Activar avisos en este dispositivo** y aceptar el permiso del navegador. Se permiten hasta cinco dispositivos activos por cuenta. El permiso es voluntario y no se pide al abrir la página.

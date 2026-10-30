@@ -3,7 +3,8 @@ import './account.css';
 import './dashboard.css';
 import { supabase, isCloudConfigured, getSession, getProfile, accountUrl, cloudErrorMessage, getAccountSecurity, requiresSecondFactor } from './cloud.js';
 import { buildRequestText } from './request.js';
-import { BUSINESS, buildWhatsAppUrl } from './config.js';
+import { buildBusinessWhatsAppUrl, buildWhatsAppUrl } from './config.js';
+import { loadRequestPage, loadRequestDetail } from './inbox.js';
 import { getPushAvailability, getPushDeviceState, enablePushNotifications, disablePushNotifications } from './push-notifications.js';
 
 const statusLabels = { submitted: 'Recibida', contacted: 'Contactado', negotiating: 'En conversación', completed: 'Finalizada', cancelled: 'Cancelada' };
@@ -11,14 +12,15 @@ const roleLabels = { applicant: 'Cliente', provider: 'Asesor de mudanzas', admin
 const providerLabels = { pending: 'Pendiente de revisión', approved: 'Aprobado', suspended: 'Suspendido', expired: 'Vigencia vencida' };
 const byId = (id) => document.getElementById(id);
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
-const state = { session: null, profile: null, requests: [], notifications: [], providers: [], users: [], selectedId: null, page: 0, hasNext: false, loading: false, tab: 'requests' };
+const state = { session: null, profile: null, requests: [], notifications: [], providers: [], users: [], businesses: [], businessId: '', selectedId: null, detail: null, detailLoading: false, page: 0, cursors: [null], nextCursor: null, hasNext: false, loading: false, tab: 'requests' };
 let loadGeneration = 0;
+let detailGeneration = 0;
+let lastRefreshAt = 0;
 let accessExpiryTimer = null;
 let hasUnsavedEdits = false;
 let activeUserId = null;
 let assuranceLevel = 'aal1';
 let pushBusy = false;
-const pageSize = 20;
 const isAdmin = () => ['admin', 'superadmin'].includes(state.profile?.role);
 const isSuperadmin = () => state.profile?.role === 'superadmin';
 const dateFormat = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' });
@@ -41,7 +43,7 @@ function notify(message = '', error = false) {
   element.hidden = !message;
 }
 function setTab(tab) {
-  const allowed = ['requests', 'notifications', 'profile', ...(isAdmin() ? ['providers'] : []), ...(isSuperadmin() ? ['users'] : [])];
+  const allowed = ['requests', 'notifications', 'profile', ...(requiresSecondFactor(state.profile) ? ['business'] : []), ...(isAdmin() ? ['providers'] : []), ...(isSuperadmin() ? ['users'] : [])];
   state.tab = allowed.includes(tab) ? tab : 'requests';
   document.querySelectorAll('[data-panel]').forEach((button) => {
     const active = button.dataset.panel === state.tab;
@@ -55,9 +57,19 @@ function gate(title, description, actions = '') {
   byId('dashboard-gate').hidden = false;
   byId('dashboard-gate').innerHTML = `<div class="cloud-empty"><span class="cloud-empty-icon" aria-hidden="true">↗</span><h1>${esc(title)}</h1><p>${esc(description)}</p><div class="dashboard-actions">${actions}</div></div>`;
 }
-function getCurrentRequest() { return state.requests.find((request) => request.id === state.selectedId); }
+function getCurrentRequest() { return state.detail?.id === state.selectedId ? state.detail : null; }
+function clearSelection() {
+  detailGeneration += 1;
+  state.selectedId = null; state.detail = null; state.detailLoading = false;
+}
+function resetPages() {
+  state.page = 0; state.cursors = [null]; state.nextCursor = null; state.hasNext = false;
+  clearSelection();
+}
 function clearPrivateData() {
   loadGeneration += 1;
+  resetPages();
+  state.businessId = ''; state.businesses = [];
   activeUserId = null;
   assuranceLevel = 'aal1';
   byId('phone-notifications').hidden = true;
@@ -67,7 +79,7 @@ function clearPrivateData() {
   if (accessExpiryTimer) clearTimeout(accessExpiryTimer);
   accessExpiryTimer = null;
   state.session = null; state.profile = null; state.requests = []; state.notifications = []; state.providers = []; state.users = []; state.selectedId = null;
-  for (const id of ['cloud-request-list', 'cloud-request-detail', 'cloud-notifications', 'cloud-providers', 'cloud-users', 'profile-side', 'provider-plan']) byId(id).replaceChildren();
+  for (const id of ['cloud-request-list', 'cloud-request-detail', 'cloud-notifications', 'cloud-providers', 'cloud-users', 'profile-side', 'provider-plan', 'cloud-businesses']) byId(id).replaceChildren();
   byId('profile-form').reset();
   byId('profile-email').value = '';
   byId('dashboard-content').hidden = true;
@@ -97,13 +109,17 @@ function renderRequestList() {
   byId('requests-previous').disabled = state.page === 0 || state.loading;
   byId('requests-next').disabled = !state.hasNext || state.loading;
   byId('cloud-request-list').innerHTML = state.requests.length ? state.requests.map((request) => {
-    const fields = request.payload?.fields || {};
-    return `<button type="button" class="dashboard-request${request.id === state.selectedId ? ' is-selected' : ''}" data-cloud-request="${esc(request.id)}" aria-pressed="${request.id === state.selectedId}"><span class="dashboard-status dashboard-status--${esc(request.status)}">${esc(statusLabels[request.status] || 'Recibida')}</span><strong>${esc(fields.customerName || request.reference)}</strong><p>${esc(fields.origin)} → ${esc(fields.destination)}</p><small>Mudanza: ${esc(formatDate(fields.moveDate))} · ${esc(request.reference)}</small></button>`;
+    return `<button type="button" class="dashboard-request${request.id === state.selectedId ? ' is-selected' : ''}" data-cloud-request="${esc(request.id)}" aria-pressed="${request.id === state.selectedId}"><span class="dashboard-status dashboard-status--${esc(request.status)}">${esc(statusLabels[request.status] || 'Recibida')}</span><strong>${esc(request.customer_name || request.reference)}</strong><p>${esc(request.origin)} → ${esc(request.destination)}</p><small>Mudanza: ${esc(formatDate(request.move_date))} · ${esc(request.reference)}</small></button>`;
   }).join('') : `<div class="dashboard-empty-small"><strong>${state.profile.role === 'provider' ? 'Aún no tienes solicitudes disponibles.' : 'Aún no hay solicitudes aquí.'}</strong>${state.profile.role === 'provider' ? 'Revisa el estado y la vigencia de tu acceso. Las solicitudes aparecen cuando se te asignan.' : 'Las solicitudes enviadas desde tu cuenta aparecerán aquí para darles seguimiento.'}</div>`;
 }
 function renderRequestDetail() {
   const request = getCurrentRequest();
   const detail = byId('cloud-request-detail');
+  detail.setAttribute('aria-busy', String(state.detailLoading));
+  if (state.detailLoading) {
+    detail.innerHTML = '<div class="cloud-empty"><span class="cloud-loading" aria-hidden="true"></span><p>Cargando la solicitud seleccionada…</p></div>';
+    return;
+  }
   if (!request) {
     detail.innerHTML = '<div class="cloud-empty"><span class="cloud-empty-icon" aria-hidden="true">↗</span><p class="cloud-eyebrow">Cada detalle cuenta</p><h2>Una conversación bien preparada.</h2><p>Selecciona una solicitud para consultar su información y seguimiento. El precio se acuerda directamente con el negocio.</p></div>';
     return;
@@ -116,7 +132,7 @@ function renderRequestDetail() {
   const terminal = ['completed', 'cancelled'].includes(request.status);
   const ownRequest = request.owner_id === state.session.user.id;
   detail.innerHTML = `<header class="dashboard-detail-head"><div><p class="cloud-eyebrow">${esc(request.reference)}</p><h2>${esc(fields.customerName || 'Solicitud de mudanza')}</h2><p>${esc(fields.origin)} → ${esc(fields.destination)}</p></div><span class="dashboard-status dashboard-status--${esc(request.status)}">${esc(statusLabels[request.status] || request.status)}</span></header>
-    <div class="dashboard-meta"><div><span>Fecha de mudanza</span><strong>${esc(formatDate(fields.moveDate))}</strong></div><div><span>Fecha de recepción</span><strong>${esc(formatDate(request.created_at))}</strong></div><div><span>Compartida con</span><strong>${request.audience === 'network' ? 'Red de mudanceros autorizada' : 'Negocio familiar'}</strong></div></div>
+    <div class="dashboard-meta"><div><span>Fecha de mudanza</span><strong>${esc(formatDate(fields.moveDate))}</strong></div><div><span>Fecha de recepción</span><strong>${esc(formatDate(request.created_at))}</strong></div><div><span>Compartida con</span><strong>${esc(state.businesses.find((business) => business.id === request.business_id)?.name || 'Negocio seleccionado')}</strong></div></div>
     ${contactAllowed ? `<div class="dashboard-actions"><a href="tel:+${digits}" class="button button--primary">Llamar al cliente</a><a href="${esc(buildWhatsAppUrl(`Hola ${fields.customerName || ''}, te contacto sobre tu solicitud de mudanza ${request.reference}. Me gustaría revisar los detalles contigo.`, digits))}" target="_blank" rel="noopener noreferrer" class="button button--secondary">Abrir WhatsApp</a></div><p class="cloud-small">El mensaje se envía desde WhatsApp cuando lo confirmes. Abrir el enlace no cambia el estado de la solicitud.</p>` : ''}
     <details class="dashboard-request-text" open><summary>Detalles de la mudanza</summary><pre id="cloud-request-text"></pre></details>
     ${isAdmin() && !terminal ? `<form id="request-status-form" class="cloud-form dashboard-status-form"><label>Actualizar seguimiento<select name="status" required>${['contacted', 'negotiating', 'completed', 'cancelled'].map((status) => `<option value="${status}"${status === request.status ? ' selected' : ''}>${statusLabels[status]}</option>`).join('')}</select></label><button type="submit" class="button button--secondary">Guardar seguimiento</button><p class="cloud-small">Finalizar o cancelar cierra el seguimiento. No registra pagos ni reservas.</p></form>` : ''}
@@ -126,7 +142,18 @@ function renderRequestDetail() {
 function renderNotifications() {
   const unread = state.notifications.filter((notification) => !notification.read_at).length;
   byId('notification-count').textContent = unread || '0';
+  byId('notification-count').setAttribute('aria-label', `${unread} sin leer entre las 50 notificaciones más recientes`);
+  byId('notification-summary').textContent = `${unread} sin leer entre las ${state.notifications.length} más recientes (máximo 50)`;
   byId('cloud-notifications').innerHTML = state.notifications.length ? state.notifications.map((notification) => `<article class="dashboard-notification${notification.read_at ? '' : ' is-unread'}"><div><h3>${esc(notification.title)}</h3><p>${esc(formatDate(notification.created_at))} · ${notification.read_at ? 'Leída' : 'Sin leer'}</p></div><div class="dashboard-actions">${notification.request_id ? `<button type="button" class="cloud-text-button" data-notification-request="${esc(notification.request_id)}" data-notification-id="${esc(notification.id)}">Ver solicitud</button>` : ''}${!notification.read_at ? `<button type="button" class="button button--secondary" data-notification-read="${esc(notification.id)}">Marcar leída</button>` : ''}</div></article>`).join('') : '<div class="dashboard-empty-small"><strong>Todo al día.</strong>Aquí aparecerán las novedades de tus solicitudes y tu cuenta.</div>';
+}
+function renderBusinesses() {
+  byId('business-tab').hidden = !requiresSecondFactor(state.profile);
+  const statuses = { active: 'Activo', approved: 'Activo', pending: 'Pendiente', suspended: 'Suspendido', inactive: 'Inactivo' };
+  byId('cloud-businesses').innerHTML = state.businesses.length ? state.businesses.map((business) => `<article class="dashboard-surface"><p class="cloud-eyebrow">Mi negocio</p><h2>${esc(business.name)}</h2><p>${esc(statuses[business.status] || business.status)} · ${esc(business.member_role === 'owner' ? 'Responsable del negocio' : business.member_role === 'manager' ? 'Responsable del equipo' : business.member_role === 'operator' ? 'Administración' : 'Miembro del equipo')}</p><p class="cloud-small">Las solicitudes dirigidas a este negocio solo están disponibles para las personas autorizadas y asignadas. Tu cuenta es individual.</p><dl class="dashboard-business-meta"><div><dt>Identificador del negocio</dt><dd>${esc(business.slug)}</dd></div><div><dt>Plan</dt><dd>${esc(business.plan_code === 'pilot' ? 'Piloto · sin cobros automáticos' : business.plan_code)}</dd></div><div><dt>Límite mensual de solicitudes</dt><dd>${esc(business.monthly_request_limit ?? 'Por configurar')}</dd></div></dl></article>`).join('') : '<div class="dashboard-empty-small"><strong>Tu cuenta aún no está vinculada a un negocio disponible.</strong>La administración debe aprobar tu acceso y asignarte al equipo. Cambiar el nombre del perfil no concede acceso a solicitudes.</div>';
+  const filter = byId('business-filter');
+  byId('business-filter-field').hidden = state.businesses.length < 2;
+  filter.innerHTML = (isAdmin() ? '<option value="">Todos los negocios autorizados</option>' : '') + state.businesses.map((business) => `<option value="${esc(business.id)}">${esc(business.name)}</option>`).join('');
+  filter.value = state.businessId;
 }
 function renderProfile() {
   const form = byId('profile-form');
@@ -154,15 +181,19 @@ function render() {
   byId('dashboard-description').textContent = isAdmin() ? 'Revisa las solicitudes y los accesos del equipo.' : state.profile.role === 'provider' ? 'Conecta con los clientes de las solicitudes que tienes asignadas.' : 'La información de tu mudanza, siempre a la mano.';
   byId('providers-tab').hidden = !isAdmin();
   byId('users-tab').hidden = !isSuperadmin();
-  renderPlan(); renderRequestList(); renderRequestDetail(); renderNotifications(); renderProfile(); renderProviders(); renderUsers();
+  renderBusinesses(); renderPlan(); renderRequestList(); renderRequestDetail(); renderNotifications(); renderProfile(); renderProviders(); renderUsers();
   setTab(state.tab);
 }
 async function queryRows(query) { const { data, error } = await query; if (error) throw error; return data || []; }
 async function refresh(announce = false) {
   if (state.loading) return;
   const generation = ++loadGeneration;
+  detailGeneration += 1;
+  state.detail = null; state.detailLoading = false; state.selectedId = null;
+  lastRefreshAt = Date.now();
   state.loading = true;
   byId('refresh-dashboard').disabled = true;
+  byId('business-filter').disabled = true;
   try {
     const session = await getSession();
     if (generation !== loadGeneration) return;
@@ -194,18 +225,32 @@ async function refresh(announce = false) {
       currentAssurance = security.currentLevel;
     }
     const admin = ['admin', 'superadmin'].includes(profile.role);
-    const [rows, notifications, providers, users] = await Promise.all([
-      queryRows(supabase.from('move_requests').select('id,reference,owner_id,payload,audience,status,created_at').order('created_at', { ascending: false }).range(state.page * pageSize, state.page * pageSize + pageSize)),
-      queryRows(supabase.from('notifications').select('id,user_id,request_id,title,read_at,created_at').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(50)),
-      admin ? queryRows(supabase.from('profiles').select('*').eq('role', 'provider').order('display_name').limit(100)) : [],
-      profile.role === 'superadmin' ? queryRows(supabase.from('profiles').select('*').order('display_name').limit(100)) : [],
+    // Resolve the scope first so provider reads use the business index instead of
+    // scanning the global inbox through row policies. RLS remains the authority.
+    const businesses = requiresSecondFactor(profile) ? await rpc('get_my_businesses') : [];
+    if (generation !== loadGeneration) return;
+    const provider = profile.role === 'provider';
+    let businessId = state.businessId;
+    if (!businesses.some((business) => business.id === businessId)) businessId = provider ? businesses[0]?.id || '' : '';
+    if (businessId !== state.businessId) {
+      state.businessId = businessId;
+      resetPages();
+    }
+    const [page, notifications, providers, users] = await Promise.all([
+      provider && !businessId ? { rows: [], hasNext: false, nextCursor: null } : loadRequestPage(supabase, {
+        cursor: state.cursors[state.page], businessId: businessId || null,
+        ownerId: profile.role === 'applicant' ? session.user.id : null,
+      }),
+      queryRows(supabase.from('notifications').select('id,user_id,request_id,title,read_at,created_at').eq('user_id', session.user.id).order('created_at', { ascending: false }).order('id', { ascending: false }).limit(50)),
+      admin ? queryRows(supabase.from('profiles').select('*').eq('role', 'provider').order('display_name').order('id').limit(100)) : [],
+      profile.role === 'superadmin' ? queryRows(supabase.from('profiles').select('*').order('display_name').order('id').limit(100)) : [],
     ]);
     if (generation !== loadGeneration) return;
     state.session = session; state.profile = profile;
     assuranceLevel = currentAssurance;
-    state.hasNext = rows.length > pageSize; state.requests = rows.slice(0, pageSize);
+    state.hasNext = page.hasNext; state.requests = page.rows; state.nextCursor = page.nextCursor;
+    state.businesses = businesses || [];
     state.notifications = notifications; state.providers = providers; state.users = users;
-    if (!state.requests.some((request) => request.id === state.selectedId)) state.selectedId = state.requests[0]?.id || null;
     hasUnsavedEdits = false;
     render();
     renderPhoneNotifications();
@@ -218,8 +263,37 @@ async function refresh(announce = false) {
     if (generation !== loadGeneration) return;
     state.loading = false;
     byId('refresh-dashboard').disabled = false;
+    byId('business-filter').disabled = false;
     byId('requests-previous').disabled = state.page === 0;
     byId('requests-next').disabled = !state.hasNext;
+  }
+}
+async function openRequest(requestId, notificationId = null) {
+  if (state.loading || !state.session) return;
+  const generation = loadGeneration;
+  const selection = ++detailGeneration;
+  state.selectedId = requestId; state.detail = null; state.detailLoading = true;
+  renderRequestList(); renderRequestDetail(); setTab('requests'); notify();
+  try {
+    const detail = await loadRequestDetail(supabase, requestId);
+    if (generation !== loadGeneration || selection !== detailGeneration) return;
+    if (notificationId) {
+      await rpc('mark_notification_read', { p_notification_id: notificationId });
+      if (generation !== loadGeneration || selection !== detailGeneration) return;
+      const notice = state.notifications.find((item) => item.id === notificationId);
+      if (notice) notice.read_at = new Date().toISOString();
+      renderNotifications();
+    }
+    state.detail = detail;
+  } catch (error) {
+    if (generation !== loadGeneration || selection !== detailGeneration) return;
+    state.detail = null;
+    notify(cloudErrorMessage(error), true);
+  } finally {
+    if (generation === loadGeneration && selection === detailGeneration) {
+      state.detailLoading = false;
+      renderRequestDetail();
+    }
   }
 }
 async function mutate(element, action, success) {
@@ -229,12 +303,15 @@ async function mutate(element, action, success) {
   buttons.forEach((button) => { button.disabled = true; });
   notify();
   const generation = loadGeneration;
+  const actorId = state.session?.user.id;
   try {
     await action();
     if (generation !== loadGeneration) return;
     await refresh();
-    notify(success);
-  } catch (error) { notify(cloudErrorMessage(error), true); }
+    if (state.session?.user.id === actorId) notify(success);
+  } catch (error) {
+    if (generation === loadGeneration && state.session?.user.id === actorId) notify(cloudErrorMessage(error), true);
+  }
   finally { element.dataset.busy = 'false'; buttons.forEach((button) => { button.disabled = false; }); }
 }
 async function rpc(name, args) { const { data, error } = await supabase.rpc(name, args); if (error) throw error; return data; }
@@ -287,15 +364,18 @@ byId('enable-phone-notifications').addEventListener('click', () => changePhoneNo
 byId('disable-phone-notifications').addEventListener('click', () => changePhoneNotifications(false));
 
 document.querySelectorAll('[data-panel]').forEach((button) => button.addEventListener('click', () => setTab(button.dataset.panel)));
-byId('refresh-dashboard').addEventListener('click', () => refresh(true));
+byId('refresh-dashboard').addEventListener('click', () => { resetPages(); refresh(true); });
 byId('dashboard-gate').addEventListener('click', (event) => { if (event.target.closest('#retry-dashboard')) refresh(); });
 byId('requests-previous').addEventListener('click', () => { if (state.page > 0 && !state.loading) { state.page -= 1; refresh(); } });
-byId('requests-next').addEventListener('click', () => { if (state.hasNext && !state.loading) { state.page += 1; refresh(); } });
+byId('requests-next').addEventListener('click', () => { if (state.hasNext && state.nextCursor && !state.loading) { state.cursors[state.page + 1] = state.nextCursor; state.page += 1; refresh(); } });
+byId('business-filter').addEventListener('change', (event) => {
+  if (state.loading) return;
+  state.businessId = event.target.value; resetPages(); refresh();
+});
 byId('cloud-request-list').addEventListener('click', (event) => {
   const button = event.target.closest('[data-cloud-request]');
   if (!button) return;
-  state.selectedId = button.dataset.cloudRequest;
-  renderRequestList(); renderRequestDetail();
+  openRequest(button.dataset.cloudRequest);
 });
 byId('cloud-request-detail').addEventListener('click', (event) => {
   const button = event.target.closest('#cancel-cloud-request');
@@ -315,20 +395,7 @@ byId('cloud-notifications').addEventListener('click', async (event) => {
   const button = event.target.closest('[data-notification-request]');
   if (!button) return;
   button.disabled = true;
-  const generation = loadGeneration;
-  try {
-    const { data, error } = await supabase.from('move_requests').select('id,reference,owner_id,payload,audience,status,created_at').eq('id', button.dataset.notificationRequest).maybeSingle();
-    if (error) throw error;
-    if (generation !== loadGeneration) return;
-    if (!data) throw new Error('Esta solicitud ya no está disponible para tu cuenta.');
-    if (!state.requests.some((request) => request.id === data.id)) state.requests.unshift(data);
-    state.selectedId = data.id;
-    await rpc('mark_notification_read', { p_notification_id: button.dataset.notificationId });
-    if (generation !== loadGeneration) return;
-    const notice = state.notifications.find((item) => item.id === button.dataset.notificationId);
-    if (notice) notice.read_at = new Date().toISOString();
-    renderRequestList(); renderRequestDetail(); renderNotifications(); setTab('requests'); notify();
-  } catch (error) { notify(cloudErrorMessage(error), true); }
+  try { await openRequest(button.dataset.notificationRequest, button.dataset.notificationId); }
   finally { button.disabled = false; }
 });
 byId('profile-form').addEventListener('submit', (event) => {
@@ -380,7 +447,7 @@ byId('dashboard-signout').addEventListener('click', async () => {
 });
 
 if (!isCloudConfigured) {
-  gate('Estamos preparando las cuentas.', 'Por ahora puedes preparar tu ficha y comunicarte con el negocio por WhatsApp.', `<a class="button button--primary" href="${esc(buildWhatsAppUrl('Hola, quisiera información sobre una mudanza.', BUSINESS.whatsapp))}" target="_blank" rel="noopener noreferrer">Hablar por WhatsApp</a><a class="button button--secondary" href="./index.html">Preparar una solicitud</a>`);
+  gate('El panel de D’Curiel está preparado.', 'Los accesos todavía no están activos. Cada integrante tendrá su cuenta y su verificación en dos pasos. Una vez conectado el servicio, aquí podrán consultar las solicitudes dirigidas al negocio y sus notificaciones.', `<a class="button button--primary" href="${esc(buildBusinessWhatsAppUrl())}" target="_blank" rel="noopener noreferrer">Hablar con Mudanzas D’Curiel</a><a class="button button--secondary" href="./index.html">Preparar una solicitud</a><p class="cloud-small">Compartir una ficha solo por WhatsApp no la guarda en este panel. El seguimiento en línea será opcional para el cliente.</p>`);
 } else {
   supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT') {
@@ -395,10 +462,11 @@ if (!isCloudConfigured) {
       } else activeUserId = session.user.id;
     }
   });
-  const refreshIfIdle = () => { if (!document.hidden && !hasUnsavedEdits && !state.loading) refresh(); };
+  const refreshIfIdle = () => {
+    if (!document.hidden && !hasUnsavedEdits && !state.loading && Date.now() - lastRefreshAt >= 60000) { resetPages(); refresh(); }
+  };
   window.addEventListener('focus', refreshIfIdle);
   document.addEventListener('visibilitychange', refreshIfIdle);
   document.addEventListener('input', (event) => { if (event.target.closest('#dashboard-content form')) hasUnsavedEdits = true; });
-  setInterval(refreshIfIdle, 60000);
   refresh();
 }

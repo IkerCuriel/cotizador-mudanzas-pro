@@ -2,7 +2,7 @@ import { ROOMS, FURNITURE, ITEMS, PROPERTY_TYPES, ACCESS_TYPES, CARRY_RANGES } f
 import { createRequest, normalizeDraft, migrateLegacyDraft, buildRequestText } from "./request.js";
 import { saveRequest, loadRequests } from "./storage.js";
 import { buildBusinessWhatsAppUrl } from "./config.js";
-import { isCloudConfigured, getSession, getPublicSettings, submitCloudRequest, accountUrl, cloudErrorMessage } from "./cloud.js";
+import { isCloudConfigured, getSession, getPublicSettings, submitBusinessRequest, accountUrl, cloudErrorMessage } from "./cloud.js";
 import { LEGAL_READY } from "./legal-config.js";
 
 const DRAFT_KEY = "moveflow-request-draft-v1";
@@ -338,19 +338,19 @@ function prepareRequest() {
 }
 
 function updateCloudControls() {
-  const ready = isCloudConfigured && LEGAL_READY && cloudState.settings?.accepting_requests === true;
+  const ready = isCloudConfigured && LEGAL_READY && cloudState.settings?.accepting_requests === true && cloudState.settings?.business_routing_version === 1;
   const loggedIn = Boolean(cloudState.session);
   const authLink = document.getElementById("requestAccountLink");
   authLink.href = loggedIn ? "./panel.html" : accountUrl("index.html#retomar");
   authLink.textContent = loggedIn ? "Ver mi cuenta" : "Entrar o crear mi cuenta";
-  text("requestAccountStatus", !ready ? "Estamos preparando el registro y la recepción en línea. Por ahora puedes revisar tu ficha y compartirla con el negocio por WhatsApp." : loggedIn ? "Tu sesión está activa. Revisa tu ficha y pulsa «Enviar al equipo» para guardarla en tu cuenta." : "Crea una cuenta gratuita para enviar tu solicitud y consultar su seguimiento desde cualquier dispositivo.");
-  document.getElementById("networkConsentField").hidden = !(ready && cloudState.settings?.network_enabled === true);
-  if (document.getElementById("networkConsentField").hidden) document.getElementById("networkConsent").checked = false;
+  text("requestAccountStatus", !ready ? "Estamos preparando las cuentas. Por ahora puedes compartir tu ficha con Mudanzas D’Curiel por WhatsApp; ese mensaje no se guarda en el panel." : loggedIn ? "Tu sesión está activa. Revisa la ficha y pulsa «Guardar y enviar a D’Curiel» para verla en tu cuenta y en el panel del negocio." : "La cuenta es opcional para WhatsApp. Crea una cuenta gratuita si también quieres guardar tu solicitud y consultar su seguimiento en el panel.");
+  document.getElementById("networkConsentField").hidden = true;
+  document.getElementById("networkConsent").checked = false;
   const button = document.getElementById("sendCloudRequest");
   button.hidden = !ready;
   button.disabled = cloudState.sending || cloudState.sentReference === state.request?.id;
-  button.textContent = cloudState.sending ? "Enviando…" : cloudState.sentReference === state.request?.id ? "Solicitud enviada" : loggedIn ? "Enviar al equipo" : "Entrar para enviar";
-  text("cloudAvailability", ready ? "Al enviar, el equipo recibirá una notificación en su panel. El precio y la disponibilidad se acuerdan directamente." : "La recepción en línea todavía no está activa. La ficha solo llega al negocio si tú la compartes por WhatsApp.");
+  button.textContent = cloudState.sending ? "Enviando…" : cloudState.sentReference === state.request?.id ? "Solicitud guardada y enviada" : loggedIn ? "Guardar y enviar a D’Curiel" : "Entrar para guardar y enviar";
+  text("cloudAvailability", ready ? "Guardar y enviar registra la solicitud en tu cuenta y avisa al equipo autorizado de D’Curiel en su panel. El botón de WhatsApp abre una conversación aparte." : "La recepción en el panel todavía no está activa. La ficha solo llega al negocio si tú la compartes por WhatsApp.");
 }
 
 async function loadCloudState() {
@@ -363,17 +363,16 @@ async function loadCloudState() {
 
 async function sendCloudRequest() {
   if (!state.request || cloudState.sending || cloudState.sentReference === state.request.id) return;
-  if (!isCloudConfigured || !LEGAL_READY || !cloudState.settings?.accepting_requests) return;
+  if (!isCloudConfigured || !LEGAL_READY || !cloudState.settings?.accepting_requests || cloudState.settings?.business_routing_version !== 1) return;
   if (!cloudState.session) { window.location.href = accountUrl("index.html#retomar"); return; }
   cloudState.sending = true;
   updateCloudControls();
   text("cloudSendStatus", "Enviando la solicitud…");
   try {
-    const networkConsent = cloudState.settings.network_enabled === true && checked("networkConsent");
-    const payload = { ...state.request, fields: { ...state.request.fields, networkConsent } };
-    await submitCloudRequest(payload, networkConsent ? "network" : "family");
+    const payload = { ...state.request, fields: { ...state.request.fields, networkConsent: false } };
+    await submitBusinessRequest(payload);
     cloudState.sentReference = state.request.id;
-    text("cloudSendStatus", "Solicitud recibida. El equipo tiene una notificación en su panel y podrá contactarte. Consulta el seguimiento en tu cuenta.");
+    text("cloudSendStatus", "Solicitud recibida por Mudanzas D’Curiel. Su equipo autorizado tiene una notificación en el panel. Puedes consultar el seguimiento en tu cuenta.");
     text("submissionStatus", "Tu solicitud está guardada en tu cuenta. Enviar la ficha no reserva la mudanza ni fija un precio.");
     text("modalTitle", "Solicitud enviada");
   } catch (error) {

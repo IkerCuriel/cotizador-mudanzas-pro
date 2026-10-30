@@ -20,6 +20,7 @@ function httpsOrigin(value, label) {
 }
 
 export function prepareInvitations(env) {
+  if (env.MOVEFLOW_EMAILS_CONFIRMED !== 'true') throw new InvitationConfigurationError('Confirma primero que cada persona controla su correo real. Los correos provisionales no permiten enviar invitaciones.');
   const url = httpsOrigin(env.SUPABASE_URL, 'Supabase');
   const site = httpsOrigin(env.MOVEFLOW_SITE_URL, 'la página');
   const key = String(env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -42,7 +43,7 @@ export async function provisionPilot({ env = process.env, send = false, create =
   if (!send) {
     log('Modo revisión: no se crea ninguna cuenta ni se envían correos.');
     for (const member of members) log(`${member.name}: invitación individual pendiente de correo y conexión de Supabase.`);
-    log('Después de completar la configuración privada, ejecuta con --send. Cada persona elegirá su contraseña; el acceso requiere aprobación y segundo factor.');
+    log('Los correos provisionales son referencias locales, no accesos creados. Antes de --send, sustituye esos correos y confirma MOVEFLOW_EMAILS_CONFIRMED=true. Cada persona elegirá su contraseña; el acceso requiere aprobación y segundo factor.');
     return { sent: 0, failed: 0 };
   }
   const configuration = prepareInvitations(env);

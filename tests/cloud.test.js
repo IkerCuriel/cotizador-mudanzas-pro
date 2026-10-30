@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readCloudConfig, safeReturnUrl, accountUrl, getSession, getPublicSettings, submitCloudRequest, isCloudConfigured, supabase } from '../src/cloud.js';
+import { readCloudConfig, safeReturnUrl, accountUrl, getSession, getPublicSettings, submitCloudRequest, businessSubmissionArguments, isCloudConfigured, supabase } from '../src/cloud.js';
 
 const jwt = (role) => `${Buffer.from('{}').toString('base64url')}.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.test-signature`;
 const publicEnv = { VITE_SUPABASE_URL: 'https://project.supabase.co', VITE_SUPABASE_ANON_KEY: 'sb_publishable_test_key' };
@@ -71,4 +71,16 @@ test('cloud submission requires explicit consent for the selected audience', asy
   await assert.rejects(submitCloudRequest({ id: 'MF-test', fields: {} }), /autoriza el contacto/);
   await assert.rejects(submitCloudRequest({ id: 'MF-test', fields: { privacyConsent: true } }, 'network'), /Autoriza expresamente/);
   await assert.rejects(submitCloudRequest({ id: 'MF-test', fields: { privacyConsent: true } }, 'everyone'), /Selecciona/);
+  await assert.rejects(submitCloudRequest({ id: 'MF-test', fields: { privacyConsent: true, networkConsent: true } }, 'network'), /todavía no está habilitada/);
+});
+
+test('una solicitud tiene un negocio explícito, nunca una lista de destinatarios del navegador', () => {
+  const request = { id: 'MF-TEST-BUSINESS', fields: { privacyConsent: true }, business_id: 'forged', recipients: ['arbitrary'] };
+  const args = businessSubmissionArguments(request);
+  assert.equal(args.p_business_slug, 'd-curiel');
+  assert.equal(args.p_reference, request.id);
+  assert.equal(args.p_privacy_version, '2026-10-30');
+  assert.deepEqual(Object.keys(args).sort(), ['p_business_slug', 'p_payload', 'p_privacy_version', 'p_reference']);
+  for (const slug of ['', '../d-curiel', 'd-curiel,other', ['d-curiel'], 'a'.repeat(81)]) assert.throws(() => businessSubmissionArguments(request, slug), /negocio válido/);
+  assert.throws(() => businessSubmissionArguments({ ...request, fields: {} }), /autoriza el contacto/);
 });

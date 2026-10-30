@@ -165,14 +165,17 @@ await test('backend: autorización real, aislamiento y transacciones en PostgreS
       await root(); await db.exec(`update private.platform_settings set accepting_requests=true`);
       await as('alice'); await denied(()=>submit('MF-OLD-001',draft(),'family','old'),/aviso de privacidad cambió/);
     });
-    await check('red requiere habilitación y consentimiento independiente',async()=>{
-      await as('alice'); await denied(()=>submit('MF-NET-001',draft(),'network'),/autorización correspondiente/);
+    await check('la red masiva permanece cerrada aun con el antiguo interruptor y consentimiento',async()=>{
       const networkDraft = {...draft(),fields:{...draft().fields,networkConsent:true}};
-      await denied(()=>submit('MF-NET-001',networkDraft,'network'),/red de empresas todavía/);
+      await as('alice'); await denied(()=>submit('MF-NET-001',networkDraft,'network'),/red|negocio|habilitada/i);
       await root(); await db.exec(`update private.platform_settings set network_enabled=true`);
-      await as('alice'); const request = await submit('MF-NET-001',networkDraft,'network');
-      await as('other'); assert.equal((await db.query(`select id from public.move_requests`)).rows[0].id,request.id);
-      await root(); assert.equal((await db.query(`select count(*)::int as n from public.request_recipients`)).rows[0].n,2);
+      await as('alice'); await denied(()=>submit('MF-NET-001',networkDraft,'network'),/red|negocio|habilitada/i);
+      const settings = (await db.query(`select public.public_site_config() as config`)).rows[0].config;
+      assert.equal(settings.network_enabled,false);
+      assert.equal(settings.business_routing_version,1);
+      await root();
+      assert.equal((await db.query(`select count(*)::int as n from public.move_requests`)).rows[0].n,0);
+      assert.equal((await db.query(`select count(*)::int as n from public.request_recipients`)).rows[0].n,0);
     });
     await check('contenido inválido se rechaza y controles enviados se descartan',async()=>{
       await as('alice');

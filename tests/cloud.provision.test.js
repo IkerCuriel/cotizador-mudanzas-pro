@@ -2,7 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { prepareInvitations, provisionPilot } from '../scripts/provision-pilot.mjs';
 
-const env = () => ({ SUPABASE_URL: 'https://project.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_test_only', MOVEFLOW_SITE_URL: 'https://mudanzas.example', MOVEFLOW_TERE_EMAIL: 'tere@example.test', MOVEFLOW_MARCO_EMAIL: 'marco@example.test', MOVEFLOW_PRIVACY_READY: 'true' });
+const env = () => ({ SUPABASE_URL: 'https://project.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_test_only', MOVEFLOW_SITE_URL: 'https://mudanzas.example', MOVEFLOW_TERE_EMAIL: 'tere@example.test', MOVEFLOW_MARCO_EMAIL: 'marco@example.test', MOVEFLOW_PRIVACY_READY: 'true', MOVEFLOW_EMAILS_CONFIRMED: 'true' });
+
+test('correos provisionales bloquean el envío antes de crear el cliente administrativo', async () => {
+  for (const confirmation of [undefined, 'false', 'TRUE', '1']) {
+    await assert.rejects(provisionPilot({ env: { ...env(), MOVEFLOW_EMAILS_CONFIRMED: confirmation }, send: true,
+      create: () => { assert.fail('No debe abrir conexión con correos no confirmados'); }, log: () => {} }), /correo real/);
+  }
+});
 
 test('revisión de invitaciones no abre conexión ni envía correos', async () => {
   const result = await provisionPilot({ create: () => { throw new Error('No debería conectar'); }, log: () => {} });

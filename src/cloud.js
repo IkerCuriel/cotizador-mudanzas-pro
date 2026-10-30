@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { BUSINESS } from './config.js';
 
 function jwtRole(key) {
   try {
@@ -65,15 +66,27 @@ export async function getPublicSettings() {
   return data;
 }
 
+/** One explicit business per request. The database resolves and authorizes its team. */
+export function businessSubmissionArguments(request, businessSlug = BUSINESS.slug) {
+  if (!request?.id || request?.fields?.privacyConsent !== true) throw new Error('Revisa la solicitud y autoriza el contacto antes de enviarla.');
+  if (typeof businessSlug !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(businessSlug) || businessSlug.length > 80) throw new Error('Selecciona un negocio válido para esta solicitud.');
+  return { p_reference: request.id, p_payload: request, p_business_slug: businessSlug, p_privacy_version: '2026-10-30' };
+}
+
+export async function submitBusinessRequest(request, businessSlug = BUSINESS.slug) {
+  const args = businessSubmissionArguments(request, businessSlug);
+  const { data, error } = await requireCloud().rpc('submit_business_request', args);
+  if (error) throw error;
+  return data;
+}
+
+// Compatibility for older callers: a broad network broadcast is intentionally unavailable.
 export async function submitCloudRequest(request, audience = 'family') {
   if (!['family', 'network'].includes(audience)) throw new Error('Selecciona a quién quieres enviar la solicitud.');
   if (!request?.id || request?.fields?.privacyConsent !== true) throw new Error('Revisa la solicitud y autoriza el contacto antes de enviarla.');
   if (audience === 'network' && request.fields.networkConsent !== true) throw new Error('Autoriza expresamente compartir la solicitud con los mudanceros de la red.');
-  const { data, error } = await requireCloud().rpc('submit_request', {
-    p_reference: request.id, p_payload: request, p_audience: audience, p_privacy_version: '2026-10-30',
-  });
-  if (error) throw error;
-  return data;
+  if (audience === 'network') throw new Error('La distribución a la red todavía no está habilitada. Selecciona un negocio.');
+  return submitBusinessRequest(request);
 }
 
 /** Server policies enforce this too; this helper chooses the appropriate account screen. */
