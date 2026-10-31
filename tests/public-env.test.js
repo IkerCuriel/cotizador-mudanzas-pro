@@ -28,3 +28,9 @@ test('a private VAPID key cannot be bundled as the public push key', () => {
   assert.throws(() => assertPublicEnvironment({ VITE_WEB_PUSH_ENABLED: 'true' }), /VAPID pública/);
   assert.doesNotThrow(() => assertPublicEnvironment({ VITE_WEB_PUSH_ENABLED: 'true', VITE_WEB_PUSH_PUBLIC_KEY: 'B'.repeat(87), VAPID_PRIVATE_KEY: privateKey }));
 });
+
+test('Google browser key is explicit and rejects unrelated secrets without echoing them', () => {
+  assert.doesNotThrow(() => assertPublicEnvironment({VITE_GOOGLE_MAPS_API_KEY:'AIza' + 'a'.repeat(35)}));
+  assert.doesNotThrow(() => assertPublicEnvironment({VITE_GOOGLE_MAPS_API_KEY:''}));
+  assert.throws(() => assertPublicEnvironment({VITE_GOOGLE_MAPS_API_KEY:'server-secret-canary'}), error => !error.message.includes('server-secret-canary'));
+});

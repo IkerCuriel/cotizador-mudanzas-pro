@@ -1,7 +1,7 @@
 import './styles.css';
 import './pilot.css';
 import { loadRequests, updateRequest, importRequest, REQUESTS_KEY } from './storage.js';
-import { buildRequestText, addOffer, selectOffer, restoreRequest } from './request.js';
+import { buildRequestText, routeText, addOffer, selectOffer, restoreRequest } from './request.js';
 
 const statusLabels = { prepared: 'Preparada', contacted: 'Contactado', negotiating: 'En conversación', agreed: 'Elección registrada' };
 const contactLabels = { whatsapp: 'WhatsApp / mensaje', call: 'Llamada', either: 'Llamada o mensaje' };
@@ -56,7 +56,7 @@ function renderList() {
     return `<button class="pilot-request${request.id === selectedId ? ' is-selected' : ''}" type="button" data-request-id="${escapeHtml(request.id)}" aria-pressed="${request.id === selectedId}">
       <span class="pilot-request-top"><span class="pilot-status pilot-status--${escapeHtml(request.status)}">${escapeHtml(statusLabels[request.status] || 'Preparada')}</span><span>${escapeHtml(readableDate(fields.moveDate))}</span></span>
       <strong>${escapeHtml(fields.customerName || 'Sin nombre')}</strong>
-      <span class="pilot-request-route">${escapeHtml(fields.origin)} <span aria-hidden="true">→</span> ${escapeHtml(fields.destination)}</span>
+      <span class="pilot-request-route">${escapeHtml(routeText(fields))}</span>
       <span class="pilot-request-bottom">${Number(request.totals?.totalItems) || 0} artículos · ${(request.offers || []).length} propuestas</span>
     </button>`;
   }).join('');
@@ -87,7 +87,7 @@ function renderDetail() {
   const digits = phoneDigits(fields.phone);
   const canContact = digits.length >= 10 && digits.length <= 15;
   const whatsapp = `https://wa.me/${digits}?text=${encodeURIComponent(`Hola ${fields.customerName || ''}, te contactamos sobre tu solicitud de mudanza de ${fields.origin} a ${fields.destination}. Quisiéramos revisar los detalles contigo para ofrecerte una propuesta.`)}`;
-  detail.innerHTML = `<div class="pilot-detail-head"><div><p class="pilot-eyebrow">${escapeHtml(request.id)}</p><h2>${escapeHtml(fields.customerName || 'Solicitud de mudanza')}</h2><p>${escapeHtml(fields.origin)} <span aria-hidden="true">→</span> ${escapeHtml(fields.destination)}</p></div><span class="pilot-status pilot-status--${escapeHtml(request.status)}">${escapeHtml(statusLabels[request.status] || 'Preparada')}</span></div>
+  detail.innerHTML = `<div class="pilot-detail-head"><div><p class="pilot-eyebrow">${escapeHtml(request.id)}</p><h2>${escapeHtml(fields.customerName || 'Solicitud de mudanza')}</h2><p>${escapeHtml(routeText(fields))}</p></div><span class="pilot-status pilot-status--${escapeHtml(request.status)}">${escapeHtml(statusLabels[request.status] || 'Preparada')}</span></div>
     <div class="pilot-facts"><div><span>Fecha de mudanza</span><strong>${escapeHtml(readableDate(fields.moveDate))}</strong></div><div><span>Teléfono</span><strong>${escapeHtml(fields.phone || 'No indicado')}</strong></div><div><span>Contacto preferido</span><strong>${escapeHtml(contactLabels[fields.contactMethod] || 'Por acordar')}</strong></div><div><span>Horario de contacto</span><strong>${escapeHtml(contactWindowLabels[fields.contactWindow] || 'Por acordar')}</strong></div></div>
     <div class="pilot-contact-actions">${canContact ? `<a class="pilot-button pilot-button--dark" href="tel:+${digits}">Llamar al cliente</a><a class="pilot-button pilot-button--outline" href="${whatsapp}" target="_blank" rel="noopener noreferrer">Abrir WhatsApp</a>` : '<p class="pilot-small">Revisa el teléfono antes de contactar al cliente.</p>'}<button class="pilot-button pilot-button--outline" id="download-request" type="button">Descargar solicitud</button></div>
     <p class="pilot-small">Abrir una llamada o WhatsApp no cambia el estado. Marca el avance cuando hayas hablado con el cliente.</p>

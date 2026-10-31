@@ -73,9 +73,20 @@ export function businessSubmissionArguments(request, businessSlug = BUSINESS.slu
   return { p_reference: request.id, p_payload: request, p_business_slug: businessSlug, p_privacy_version: '2026-10-30' };
 }
 
+export function needsRouteStorage(request) {
+  const fields = request?.fields || {};
+  return Boolean(fields.originPlace || fields.destinationPlace || fields.additionalDestinations?.length);
+}
+
+export function assertRouteStorageAvailable(request, settings) {
+  if (needsRouteStorage(request) && settings?.route_destinations_version !== 1) throw new Error('El guardado de rutas está en actualización. Comparte la ficha completa por WhatsApp mientras se habilita.');
+}
+
 export async function submitBusinessRequest(request, businessSlug = BUSINESS.slug) {
   const args = businessSubmissionArguments(request, businessSlug);
-  const { data, error } = await requireCloud().rpc('submit_business_request', args);
+  const client = requireCloud();
+  if (needsRouteStorage(request)) assertRouteStorageAvailable(request, await getPublicSettings());
+  const { data, error } = await client.rpc('submit_business_request', args);
   if (error) throw error;
   return data;
 }

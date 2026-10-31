@@ -106,3 +106,9 @@ Se conserva la guía de **Cloudflare Pages como alternativa de alojamiento, junt
 Es posible empezar con cuotas gratuitas y un subdominio `pages.dev`. Un dominio propio es opcional al principio. Los correos, el uso y los futuros cobros tienen condiciones y límites.
 
 No abrir registros públicos hasta configurar el correo de autenticación, completar los avisos con los datos reales del responsable y verificar los permisos. Las guías son preparación técnica y operativa, **no una certificación de cumplimiento legal**.
+
+### Ubicaciones y perfil público
+
+- [Mapas y múltiples destinos](docs/mapas-y-ubicaciones.md).
+- [Activar Google Places cuando se configure Google Cloud](docs/google-places.md).
+- [Perfil de empresa y fotografías reales](docs/perfiles-de-negocio.md).

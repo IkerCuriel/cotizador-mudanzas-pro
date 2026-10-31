@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Prueba local — búsqueda de ubicaciones</title>
+  <link rel="stylesheet" href="../../src/styles.css" />
+  <style>
+    body { padding: 20px; }
+    .fixture { max-width: 800px; margin: auto; }
+    .fixture-banner { padding: 20px; border: 3px solid #b45309; background: #fff3d6; color: #572b00; margin-bottom: 20px; border-radius: 12px; }
+    .fixture-banner h1 { font-size: 24px; line-height: 1.3; margin: 0 0 10px; }
+    .fixture-controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: end; margin: 20px 0; }
+    .fixture-controls input { width: 100px; }
+    .fixture-form { padding: 20px; border: 1px solid #ddd; background: white; border-radius: 12px; }
+    .fixture-form > .location-search { margin-top: 24px; }
+    .fixture-controls label { display: grid; gap: 8px; }
+    #fixturePayload { padding: 20px; background: #152e2b; color: white; white-space: pre-wrap; overflow-wrap: anywhere; border-radius: 12px; }
+    #fixtureStatus { min-height: 2em; }
+  </style>
+</head>
+<body>
+<main class="fixture">
+  <aside class="fixture-banner" role="note">
+    <h1>Prueba local con resultados simulados; no son resultados de Google</h1>
+    <p>Esta página no se incluye en la publicación. Las sugerencias son dobles de prueba sin clave ni consultas a Places. Si los mapas están activados, las vistas de hitos públicos sí se cargan desde Google Maps.</p>
+  </aside>
+  <div class="fixture-controls">
+    <label for="fixtureFetchDelay">Demora de búsqueda (ms)<input id="fixtureFetchDelay" type="number" min="0" max="10000" value="300" /></label>
+    <label for="fixtureSelectDelay">Demora de selección (ms)<input id="fixtureSelectDelay" type="number" min="0" max="10000" value="500" /></label>
+    <button id="fixtureRestore" type="button" class="button button--secondary">Restaurar ejemplo</button>
+    <button id="fixtureReset" type="button" class="button button--secondary">Reiniciar prueba</button>
+  </div>
+  <p id="fixtureStatus" role="status" aria-live="polite">Escribe tres caracteres para mostrar las dos opciones simuladas.</p>
+  <form id="fixtureForm" class="fixture-form">
+    <label class="consent-field"><input id="mapsEnabled" type="checkbox" checked /><span>Mostrar mapas de Google al usar los campos de esta prueba</span></label>
+    <p id="locationSearchHelp">Selecciona con flechas y Enter, o pulsa una opción. La selección tarda 500 ms para comprobar que Tab no la pierda.</p>
+    <div class="location-search field">
+      <label for="origin">Origen *</label>
+      <input id="origin" name="origin" type="text" maxlength="500" placeholder="Escribe una ubicación de prueba" required />
+      <small class="field-error" data-error-for="origin"></small>
+    </div>
+    <div class="location-map" data-location-map="origin">
+      <div class="location-map__actions"><button type="button" class="button button--secondary" data-map-preview aria-expanded="false">Ver mapa</button><a data-map-link class="text-button" target="_blank" rel="noopener noreferrer" hidden>Abrir en Google Maps ↗</a></div>
+      <p class="location-map__status" data-map-status role="status" aria-live="polite"></p>
+      <div class="location-map__frame" data-map-frame hidden></div>
+    </div>
+    <div class="location-search field">
+      <label id="destinationLabel" for="destination">Destino *</label>
+      <input id="destination" name="destination" type="text" maxlength="500" placeholder="Escribe otro destino de prueba" required />
+      <small class="field-error" data-error-for="destination"></small>
+    </div>
+    <div class="location-map" data-location-map="destination">
+      <div class="location-map__actions"><button type="button" class="button button--secondary" data-map-preview aria-expanded="false">Ver mapa</button><a data-map-link class="text-button" target="_blank" rel="noopener noreferrer" hidden>Abrir en Google Maps ↗</a></div>
+      <p class="location-map__status" data-map-status role="status" aria-live="polite"></p>
+      <div class="location-map__frame" data-map-frame hidden></div>
+    </div>
+    <div id="additionalDestinations"></div>
+    <button id="addDestination" type="button" class="button button--secondary">Añadir otro destino</button>
+    <p id="routeStopsStatus" role="status" aria-live="polite"></p>
+  </form>
+  <h2>Datos recogidos por el formulario</h2>
+  <pre id="fixturePayload" aria-live="polite"></pre>
+</main>
+<script type="module" src="./location-search.js"></script>
+</body>
+</html>

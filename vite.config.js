@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => {
     name: 'social-preview',
     transformIndexHtml(html, context) {
       const tags = context.server ? [] : [{
-        tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src https://www.google.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" }, injectTo: 'head-prepend',
+        tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: "default-src 'self'; script-src 'self' https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://maps.googleapis.com https://places.googleapis.com https://maps.gstatic.com; frame-src https://www.google.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" }, injectTo: 'head-prepend',
       }];
       if (!context.filename.endsWith('/index.html')) return { html, tags };
       tags.push(
@@ -47,6 +47,7 @@ export default defineConfig(({ mode }) => {
     rollupOptions: {
       input: {
         solicitud: fileURLToPath(new URL("./index.html", import.meta.url)),
+        negocio: fileURLToPath(new URL("./negocio.html", import.meta.url)),
         cuenta: fileURLToPath(new URL("./cuenta.html", import.meta.url)),
         panel: fileURLToPath(new URL("./panel.html", import.meta.url)),
         privacidad: fileURLToPath(new URL("./privacidad.html", import.meta.url)),

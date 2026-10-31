@@ -55,3 +55,18 @@ test('control characters become harmless search separators', () => {
   assert.equal(result.query, 'CDMX Centro  México');
   assert.equal(new URL(result.searchUrl).searchParams.get('query'), result.query);
 });
+
+test('a selected place uses the official ID in Google links and Embed API when configured', () => {
+  const result = mapLinks('Ciudad de México', {placeId:'ChIJ-test_123',apiKey:'AIza'+'a'.repeat(35)});
+  const search = new URL(result.searchUrl); const embed = new URL(result.embedUrl);
+  assert.equal(search.searchParams.get('query_place_id'),'ChIJ-test_123');
+  assert.equal(embed.pathname,'/maps/embed/v1/place');
+  assert.equal(embed.searchParams.get('q'),'place_id:ChIJ-test_123');
+  assert.equal(embed.origin,'https://www.google.com');
+});
+
+test('invalid place IDs never become embed parameters or redirect hosts', () => {
+  const result = mapLinks('Ciudad de México',{placeId:'https://evil.example/?q=1',apiKey:'AIza'+'a'.repeat(35)});
+  assert.equal(new URL(result.searchUrl).searchParams.has('query_place_id'),false);
+  assert.equal(new URL(result.embedUrl).pathname,'/maps');
+});

@@ -1,5 +1,5 @@
 import { ROOMS, FURNITURE, ITEMS, ACCESS_TYPES, CARRY_RANGES } from "./catalog.js";
-import { createRequest, normalizeDraft, migrateLegacyDraft, buildRequestText, propertyLabel } from "./request.js";
+import { createRequest, normalizeDraft, migrateLegacyDraft, buildRequestText, propertyLabel, routeText } from "./request.js";
 import { saveRequest, loadRequests } from "./storage.js";
 import { buildBusinessWhatsAppUrl } from "./config.js";
 import { isCloudConfigured, getSession, getPublicSettings, submitBusinessRequest, accountUrl, cloudErrorMessage } from "./cloud.js";
@@ -41,6 +41,7 @@ function collectDraft() {
   const fields = Object.fromEntries(new FormData(form));
   fields.privacyConsent = checked("privacyConsent");
   fields.packingAcknowledged = checked("packingAcknowledged");
+  Object.assign(fields, locationMaps.collect());
   return { fields, rooms: state.rooms, inventory: state.inventory };
 }
 function setConditional(id, visible) {
@@ -168,7 +169,8 @@ function servicesText(fields) {
 function summaryEntries(request) {
   const f = request.fields;
   return [
-    ["Ruta", `${f.origin || "Origen por definir"} → ${f.destination || "Destino por definir"}`],
+    ["Ruta", routeText(f, { origin: "Origen por definir", destination: "Destino por definir" })],
+    ...(f.additionalDestinations || []).map((stop, index) => [`Destino ${index + 2}`, `${stop.address || "Por completar"}${stop.notes ? ` · ${stop.notes}` : ""}`]),
     ["Tipo de mudanza", modeText(f)],
     ["Fecha", `${f.moveDate || "Por definir"}${f.dateFlexibility === "flexible" ? " · Flexible" : " · Fecha solicitada"}`],
     ...(f.distanceKm ? [["Distancia aproximada", `${f.distanceKm} km`]] : []),
@@ -191,7 +193,7 @@ function refresh() {
   const draft = collectDraft();
   const request = createRequest(draft, { id: "MF-BORRADOR", createdAt: new Date().toISOString() });
   const f = request.fields;
-  text("summaryRoute", `${f.origin || "Origen"} → ${f.destination || "Destino"}`);
+  text("summaryRoute", routeText(f));
   text("summaryMode", modeText(f));
   text("summaryRooms", String(request.totals.totalRooms));
   text("summaryItems", String(request.totals.totalItems));
@@ -231,6 +233,7 @@ function restoreDraft() {
         if ([...field.options].some((option) => option.value === String(value))) field.value = value;
       } else field.value = value ?? "";
     });
+    locationMaps.restore(draft.fields);
     if (legacy) state.draftWarning = "Recuperamos los datos del cotizador anterior. Revisa las variantes de muebles y los accesos; ahora se prepara una solicitud sin precio automático.";
   } catch { state.draftWarning = "No se pudo recuperar el borrador anterior. Puedes iniciar una nueva solicitud."; }
 }
@@ -262,6 +265,7 @@ function validateStep(step) {
     let error = "";
     if (field.type === "checkbox") { if (field.required && !field.checked) error = "Confirma esta condición para continuar."; }
     else if (field.required && !field.value.trim()) error = "Completa este campo para continuar.";
+    else if (field.type === "text" && field.value && field.minLength > 0 && field.value.trim().length < field.minLength) error = `Escribe al menos ${field.minLength} caracteres para ubicar la dirección.`;
     else if (field.type === "number" && field.validity.badInput) error = "Ingresa un número completo y válido.";
     else if (field.type === "number" && field.value && !field.validity.valid) error = `Usa un número entero entre ${field.min || 0} y ${field.max}.`;
     else if (field.type === "date" && field.value && !field.validity.valid) error = "Elige una fecha de hoy en adelante.";
@@ -347,7 +351,7 @@ function prepareRequest() {
 }
 
 function updateCloudControls() {
-  const ready = isCloudConfigured && LEGAL_READY && cloudState.settings?.accepting_requests === true && cloudState.settings?.business_routing_version === 1;
+  const ready = isCloudConfigured && LEGAL_READY && cloudState.settings?.accepting_requests === true && cloudState.settings?.business_routing_version === 1 && cloudState.settings?.route_destinations_version === 1;
   const loggedIn = Boolean(cloudState.session);
   const authLink = document.getElementById("requestAccountLink");
   authLink.href = loggedIn ? "./panel.html" : accountUrl("index.html#retomar");
@@ -372,7 +376,7 @@ async function loadCloudState() {
 
 async function sendCloudRequest() {
   if (!state.request || cloudState.sending || cloudState.sentReference === state.request.id) return;
-  if (!isCloudConfigured || !LEGAL_READY || !cloudState.settings?.accepting_requests || cloudState.settings?.business_routing_version !== 1) return;
+  if (!isCloudConfigured || !LEGAL_READY || !cloudState.settings?.accepting_requests || cloudState.settings?.business_routing_version !== 1 || cloudState.settings?.route_destinations_version !== 1) return;
   if (!cloudState.session) { window.location.href = accountUrl("index.html#retomar"); return; }
   cloudState.sending = true;
   updateCloudControls();

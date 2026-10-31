@@ -1,4 +1,6 @@
 import { ACCESS_TYPES, CARRY_RANGES, ITEMS, PROPERTY_TYPES, ROOMS } from "./catalog.js";
+import { normalizeAdditionalDestinations, normalizeLocationSelection } from "./locations.js";
+export { MAX_ADDITIONAL_DESTINATIONS, normalizeAdditionalDestinations, normalizeLocationSelection, routeText } from "./locations.js";
 
 const record = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 const own = (value, key) => record(value) && Object.hasOwn(value, key) ? value[key] : undefined;
@@ -52,6 +54,12 @@ export function normalizeDraft(data = {}) {
   const source = record(data) && record(data.fields) ? data.fields : {};
   const fields = {};
   for (const name of ["origin", "destination"]) fields[name] = text(own(source, name), 500);
+  for (const side of ["origin", "destination"]) {
+    const selected = normalizeLocationSelection(own(source, `${side}Place`), fields[side]);
+    if (selected) fields[`${side}Place`] = selected;
+  }
+  const additionalDestinations = normalizeAdditionalDestinations(own(source, "additionalDestinations"));
+  if (additionalDestinations.length) fields.additionalDestinations = additionalDestinations;
   fields.routeType = choice(own(source, "routeType"), ["local", "outOfTown"], "local");
   fields.foraneoMode = fields.routeType === "outOfTown" ? choice(own(source, "foraneoMode"), ["direct", "shared", "undecided"], "undecided") : "";
   fields.moveDate = date(own(source, "moveDate"));
@@ -175,6 +183,11 @@ export function buildRequestText(request) {
     if (access === "combined") lines.push(`Acceso combinado: ${fields[`${endpoint}ElevatorFloors`]} niveles con elevador y ${floor - fields[`${endpoint}ElevatorFloors`]} por escaleras`);
     lines.push(`Acarreo: ${CARRY_RANGES[carryRange]}${carryRange === "over30" && fields[`${endpoint}CarryMeters`] !== "" ? ` (${numeric.format(fields[`${endpoint}CarryMeters`])} m informados)` : ""}`,
       `Traspaleo en ${endpoint === "origin" ? "origen" : "destino"}: ${yesNoLabels[fields[`${endpoint}Shuttle`]]}`);
+  }
+  for (const [index, stop] of (fields.additionalDestinations || []).entries()) {
+    lines.push("", `DESTINO ${index + 2} · DESPUÉS DEL DESTINO ANTERIOR`, stop.address || "Domicilio por confirmar");
+    if (stop.notes) lines.push(`Indicaciones: ${stop.notes}`);
+    lines.push("El equipo confirma el acceso y las maniobras de esta parada.");
   }
   lines.push("", `HABITACIONES AMUEBLADAS (${totals.totalRooms})`);
   const selectedRooms = ROOMS.filter((room) => rooms[room.id] > 0);

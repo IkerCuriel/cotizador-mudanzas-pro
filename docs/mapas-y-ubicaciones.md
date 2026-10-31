@@ -1,35 +1,35 @@
-# Ubicaciones y vista previa de mapas
+# Ubicaciones, mapas y destinos adicionales
 
-El formulario ofrece una vista previa independiente para origen y destino. Cada persona escribe colonia, ciudad o dirección y decide cuándo consultar Google. No se usa ubicación GPS ni se requiere API de autocompletado o geocodificación.
+El formulario mantiene un origen, un primer destino y hasta cinco destinos adicionales, en orden de entrega. El mapa se abre al entrar al campo y se actualiza tras una pausa al escribir. El cliente puede desmarcar «Mostrar mapas al buscar» antes de entrar en los campos para escribir sin consultar Google. No se usa GPS ni se calculan automáticamente precios o distancias por carretera.
 
-## Comportamiento
+## Estado publicado
 
-- Escribir no hace peticiones a Google. «Ver mapa» carga un iframe solo para la ubicación seleccionada.
-- «Abrir en Google Maps» es un enlace de búsqueda documentado que puede usarse aunque el navegador bloquee el iframe.
-- Editar una ubicación elimina su vista anterior. Hay que volver a pulsar «Ver mapa» para consultar el texto actualizado.
-- La ficha conserva el texto escrito, no coordenadas supuestamente verificadas. El mapa puede mostrar una zona o una coincidencia aproximada: confirmar la dirección con el negocio.
-- No se calculan distancia de carretera ni precios a partir del mapa.
-- La consulta se codifica como texto en un dominio fijo. El largo del enlace se limita; si la dirección no cabe, se solicita una ubicación más breve para la consulta.
+- Las direcciones pueden escribirse manualmente y revisarse en un mapa. No se cargan mapas al abrir la página ni al restaurar el borrador: la primera consulta ocurre al enfocar un campo o pulsar «Ver mapa».
+- Editar la dirección elimina la referencia seleccionada anterior y el mapa viejo. Los textos se codifican; nunca se navega a una URL aportada por el cliente.
+- «Añadir destino» crea una parada posterior al primer destino. Puede cambiarse el orden de las paradas adicionales o quitarse una; el primer destino conserva su posición. Una parada añadida requiere dirección antes de continuar. Sus notas permiten precisar muebles, piso o acceso.
+- El orden y los detalles se conservan en borrador, resumen, WhatsApp, descarga, impresión y detalle del panel. No se guarda una solicitud en la nube por el simple hecho de completar el formulario.
+- El enlace «Abrir en Google Maps» sigue disponible si falla el mapa. Cambiar un punto dentro del iframe no modifica el formulario: solo una selección del desplegable integrado o la edición del campo pueden hacerlo.
 
-## Inserción y dependencia externa
+## Autocompletado preparado, pendiente de activar
 
-La vista utiliza `https://www.google.com/maps?q=…&output=embed&hl=es` como inserción de mejor esfuerzo, sin claves ni facturación configuradas por este proyecto. Ese formato no se presenta como una API con contrato de estabilidad: Google puede cambiarlo o bloquearlo. El enlace de búsqueda oficial se mantiene disponible y la solicitud funciona sin el mapa.
+El propietario confirmó que todavía no tiene proyecto de Google Cloud. No hay clave configurada ni sugerencias reales activadas en producción. No se muestran opciones inventadas como resultados de Google.
 
-Para una integración formal futura puede utilizarse **Maps Embed API v1**, con una clave restringida al dominio y a esa API. Google indica que Embed no tiene cargo por uso, pero su activación requiere clave y configuración de Google Cloud/facturación. No activar otros servicios o restricciones de pago suponiendo que comparten esas condiciones.
+La integración usa la API nueva de Places. Al activarla, cada campo muestra un desplegable con atribución Google Maps; puede seleccionarse con clic o flechas y Enter. La selección actualiza el texto y conserva el identificador del lugar. Las respuestas de consultas anteriores se descartan; una sesión pertenece a un solo campo. Se limita la consulta a cinco sugerencias y se espera una pausa de escritura. No hay consultas al teclear menos de tres caracteres.
 
-Fuentes oficiales consultadas el 30 de octubre de 2026:
+Antes de activar: seguir [Google Places](google-places.md), configurar la cuenta, las restricciones y cuotas, verificar la política de contenido con la clave real y resolver las condiciones de conservación del contenido de Places. No se debe considerar que una dirección de Google pueda guardarse indefinidamente solo por copiarla al formulario. Las pruebas de la integración usan dobles de prueba; no prueban facturación ni resultados reales de Google.
 
-- [Maps URLs: búsqueda mediante `api=1&query=`, sin clave y con límite de URL](https://developers.google.com/maps/documentation/urls/get-started).
-- [Compartir o insertar mapas concretos desde Google Maps](https://support.google.com/maps/answer/7101463?hl=es).
-- [Maps Embed API: uso y facturación](https://developers.google.com/maps/documentation/embed/usage-and-billing).
-- [Configuración de Maps Embed API](https://developers.google.com/maps/documentation/embed/quickstart).
+## Vista incrustada
 
-## Privacidad y seguridad
+Sin clave se conserva `https://www.google.com/maps?q=…&output=embed&hl=es` como vista de mejor esfuerzo. No es una API con contrato de estabilidad: Google puede cambiarla o bloquearla. Si hay clave y selección de lugar se utiliza Maps Embed API v1 con `q=place_id:…`, que requiere habilitar esa API y restringir la clave.
 
-La interfaz informa antes de cargar el mapa que se compartirá la ubicación con Google. El aviso de privacidad describe el servicio externo y la opción de continuar sin él. No precargar iframes, no insertar URL proporcionadas por el cliente y no enviar el inventario o los datos de contacto en la consulta. La política de contenido permite únicamente `https://www.google.com` como origen de frames; no se amplían permisos de scripts, GPS o servidor.
+Las consultas van a hosts fijos de Google. La política de contenido permite `www.google.com` para iframes y los hosts concretos necesarios para preparar la integración de Places. No se envían nombre, teléfono ni inventario en la búsqueda. El aviso de privacidad explica el comportamiento automático y la opción de desactivarlo.
 
-## Otro inmueble en origen
+Referencias oficiales revisadas el 30 de octubre de 2026: [Maps URLs](https://developers.google.com/maps/documentation/urls/get-started), [Embed API](https://developers.google.com/maps/documentation/embed/embedding-map), [Places Autocomplete Data](https://developers.google.com/maps/documentation/javascript/place-autocomplete-data).
 
-El campo `originProperty=other` requiere `originPropertyOther`, texto de 1 a 120 caracteres tras limpiar y recortar espacios. Se conserva en el borrador, resumen, ficha de WhatsApp, descarga y panel. Al seleccionar un tipo normal deja de formar parte de la ficha. Destino conserva el catálogo anterior.
+## Contrato y base de datos
 
-Antes de activar el guardado remoto, aplicar la migración `202610300005_other_property.sql` después de 001–004. Amplía la validación del servidor sin aceptar campos de permisos ni controles del cliente. Las cuentas y la conexión remota tienen una activación independiente de los mapas.
+`src/locations.js` normaliza `originPlace`, `destinationPlace` y `additionalDestinations`. Una selección contiene exclusivamente `{placeId,label}` y se descarta si la etiqueta no coincide con el texto actual. Las paradas contienen `{address,notes?,place?}`; no se guardan coordenadas ni respuestas completas del proveedor. Los campos opcionales ausentes se omiten para conservar compatibilidad e idempotencia de fichas anteriores. Más de cinco paradas se rechazan, nunca se recortan silenciosamente al importar.
+
+Aplicar la migración `20261031001155_route_destinations.sql` después de 001–005 antes de activar la nube. `public_site_config` debe anunciar `route_destinations_version=1`; la página bloquea el envío a un servidor que no conserve los nuevos campos. La migración valida estructura, tamaños y tipos sin ampliar permisos. Las pruebas SQL usan PGlite; no se ha aplicado a una base remota.
+
+`originProperty=other` sigue requiriendo `originPropertyOther` de 1 a 120 caracteres. El texto se descarta al elegir una opción normal; destino conserva el catálogo anterior.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readCloudConfig, safeReturnUrl, accountUrl, getSession, getPublicSettings, submitCloudRequest, businessSubmissionArguments, isCloudConfigured, supabase } from '../src/cloud.js';
+import { readCloudConfig, safeReturnUrl, accountUrl, getSession, getPublicSettings, submitCloudRequest, businessSubmissionArguments, assertRouteStorageAvailable, isCloudConfigured, supabase } from '../src/cloud.js';
 
 const jwt = (role) => `${Buffer.from('{}').toString('base64url')}.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.test-signature`;
 const publicEnv = { VITE_SUPABASE_URL: 'https://project.supabase.co', VITE_SUPABASE_ANON_KEY: 'sb_publishable_test_key' };
@@ -83,4 +83,12 @@ test('una solicitud tiene un negocio explícito, nunca una lista de destinatario
   assert.deepEqual(Object.keys(args).sort(), ['p_business_slug', 'p_payload', 'p_privacy_version', 'p_reference']);
   for (const slug of ['', '../d-curiel', 'd-curiel,other', ['d-curiel'], 'a'.repeat(81)]) assert.throws(() => businessSubmissionArguments(request, slug), /negocio válido/);
   assert.throws(() => businessSubmissionArguments({ ...request, fields: {} }), /autoriza el contacto/);
+});
+
+ test('extended route data cannot be silently submitted to an older backend', () => {
+  assert.doesNotThrow(() => assertRouteStorageAvailable({fields:{origin:'A',destination:'B'}},{}));
+  for (const fields of [{additionalDestinations:[{address:'C'}]},{originPlace:{placeId:'ID',label:'A'}},{destinationPlace:{placeId:'ID',label:'B'}}]) {
+    for (const settings of [null, {}, {route_destinations_version:0}]) assert.throws(() => assertRouteStorageAvailable({fields},settings), /rutas está en actualización/);
+    assert.doesNotThrow(() => assertRouteStorageAvailable({fields},{route_destinations_version:1}));
+  }
 });
