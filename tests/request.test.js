@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ACCESS_TYPES, CARRY_RANGES, FURNITURE, ITEMS, PROPERTY_TYPES, ROOMS } from "../src/catalog.js";
-import { addOffer, buildRequestText, createRequest, getInventoryTotals, migrateLegacyDraft, normalizeDraft, restoreRequest, selectOffer } from "../src/request.js";
+import { addOffer, buildRequestText, createRequest, getInventoryTotals, migrateLegacyDraft, normalizeDraft, propertyLabel, restoreRequest, selectOffer } from "../src/request.js";
 import { importRequest, loadRequests, REQUESTS_KEY, saveRequest, updateRequest } from "../src/storage.js";
 
 const completeDraft = () => ({
@@ -28,7 +28,7 @@ function memoryStorage(initial = {}) {
 
 test("catalog covers the requested rooms, properties, access and furniture variants without duplicate IDs", () => {
   assert.equal(ROOMS.length, 11);
-  assert.equal(Object.keys(PROPERTY_TYPES).length, 7);
+  assert.equal(Object.keys(PROPERTY_TYPES).length, 8);
   assert.equal(Object.keys(ACCESS_TYPES).length, 4);
   assert.equal(Object.keys(CARRY_RANGES).length, 5);
   assert.equal(FURNITURE.length, 18);
@@ -40,6 +40,45 @@ test("catalog covers the requested rooms, properties, access and furniture varia
   }
   for (const id of ["bed-single", "bed-double", "bed-queen", "bed-king", "refrigerator-mini", "refrigerator-duplex", "refrigerator-french-door", "piano-upright", "safe-large", "shed-modular", "bar-standard"]) {
     assert.ok(ITEMS.some((item) => item.id === id), id);
+  }
+});
+
+test("otro inmueble de origen conserva su descripción en borrador, ficha y archivo importado", () => {
+  const source = completeDraft();
+  source.fields.originProperty = "other";
+  source.fields.originPropertyOther = "  Taller\u0007 de arte\ncon almacén  ";
+  const prepared = createRequest(source, { id: "MF-OTHER-001" });
+  assert.equal(prepared.fields.originProperty, "other");
+  assert.equal(prepared.fields.originPropertyOther, "Taller de arte con almacén");
+  assert.equal(propertyLabel(prepared.fields, "origin"), "Otro: Taller de arte con almacén");
+  assert.match(buildRequestText(prepared), /Inmueble: Otro: Taller de arte con almacén/);
+  const imported = importRequest(JSON.stringify(prepared), memoryStorage());
+  assert.equal(imported.fields.originPropertyOther, prepared.fields.originPropertyOther);
+  assert.equal(restoreRequest(prepared).fields.originPropertyOther, prepared.fields.originPropertyOther);
+});
+
+test("otro inmueble está limitado al origen y no conserva texto oculto al cambiar de opción", () => {
+  const source = completeDraft();
+  source.fields.originPropertyOther = "No enviar esta descripción anterior";
+  source.fields.destinationProperty = "other";
+  source.fields.destinationPropertyOther = "No se ofrece en destino";
+  const normalized = normalizeDraft(source);
+  assert.equal(normalized.fields.originPropertyOther, undefined);
+  assert.equal(normalized.fields.destinationProperty, "house");
+  assert.equal(normalized.fields.destinationPropertyOther, undefined);
+  assert.ok(!buildRequestText(normalized).includes("No enviar"));
+  assert.equal(propertyLabel({ originProperty: "__proto__" }, "origin"), "Por definir");
+  assert.equal(propertyLabel({ originProperty: { toString: null } }, "origin"), "Por definir");
+  assert.equal(propertyLabel({ originProperty: "house" }, "unexpected"), "Por definir");
+});
+
+test("la descripción de otro inmueble se normaliza con máximo 120 caracteres", () => {
+  const fields = { originProperty: "other", originPropertyOther: "X".repeat(150) };
+  assert.equal(normalizeDraft({ fields }).fields.originPropertyOther.length, 120);
+  for (const value of [undefined, null, {}, " \n\t "]) {
+    const result = normalizeDraft({ fields: { ...fields, originPropertyOther: value } });
+    assert.equal(result.fields.originPropertyOther, "");
+    assert.equal(propertyLabel(result.fields, "origin"), "Otro: por describir");
   }
 });
 

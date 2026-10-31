@@ -1,14 +1,16 @@
-import { ROOMS, FURNITURE, ITEMS, PROPERTY_TYPES, ACCESS_TYPES, CARRY_RANGES } from "./catalog.js";
-import { createRequest, normalizeDraft, migrateLegacyDraft, buildRequestText } from "./request.js";
+import { ROOMS, FURNITURE, ITEMS, ACCESS_TYPES, CARRY_RANGES } from "./catalog.js";
+import { createRequest, normalizeDraft, migrateLegacyDraft, buildRequestText, propertyLabel } from "./request.js";
 import { saveRequest, loadRequests } from "./storage.js";
 import { buildBusinessWhatsAppUrl } from "./config.js";
 import { isCloudConfigured, getSession, getPublicSettings, submitBusinessRequest, accountUrl, cloudErrorMessage } from "./cloud.js";
 import { LEGAL_READY } from "./legal-config.js";
+import { setupLocationMaps } from "./maps.js";
 
 const DRAFT_KEY = "moveflow-request-draft-v1";
 const LEGACY_KEY = "moveflow-quote-draft";
 const form = document.getElementById("movingQuoteForm");
 const modal = document.getElementById("quoteModal");
+const locationMaps = setupLocationMaps();
 const state = { step: 1, rooms: {}, inventory: {}, activeRoom: "all", variants: {}, request: null, prepared: null, draftWarning: "" };
 const emptyCounts = (items) => Object.fromEntries(items.map((item) => [item.id, 0]));
 const valueOf = (id) => document.getElementById(id)?.value ?? "";
@@ -50,6 +52,11 @@ function setConditional(id, visible) {
 }
 function syncConditions() {
   setConditional("foraneoFields", valueOf("routeType") === "outOfTown");
+  const otherProperty = valueOf("originProperty") === "other";
+  setConditional("originPropertyOtherField", otherProperty);
+  const propertyDescription = document.getElementById("originPropertyOther");
+  propertyDescription.required = otherProperty;
+  if (!otherProperty) { propertyDescription.value = ""; setError(propertyDescription); }
   for (const side of ["origin", "destination"]) {
     const floor = Number(valueOf(`${side}Floor`));
     const access = document.getElementById(`${side}Access`);
@@ -141,7 +148,7 @@ function accessText(fields, side) {
   const access = fields[`${side}Access`] || "ground";
   const combined = access === "combined" ? ` (${fields[`${side}ElevatorFloors`] || 0} pisos por elevador, ${Math.max(0, floor - Number(fields[`${side}ElevatorFloors`] || 0))} por escaleras)` : "";
   const carry = fields[`${side}CarryRange`] === "over30" && fields[`${side}CarryMeters`] ? `${fields[`${side}CarryMeters`]} m` : CARRY_RANGES[fields[`${side}CarryRange`]] || "Por confirmar";
-  return `${PROPERTY_TYPES[fields[`${side}Property`]] || "Por definir"} · ${floor === 0 ? "PB" : `Piso ${floor}`} · ${ACCESS_TYPES[access] || "Por confirmar"}${combined}. Acarreo: ${carry}. Traspaleo: ${answerLabels[fields[`${side}Shuttle`]] || "Por confirmar"}.`;
+  return `${propertyLabel(fields, side)} · ${floor === 0 ? "PB" : `Piso ${floor}`} · ${ACCESS_TYPES[access] || "Por confirmar"}${combined}. Acarreo: ${carry}. Traspaleo: ${answerLabels[fields[`${side}Shuttle`]] || "Por confirmar"}.`;
 }
 function modeText(fields) {
   if (fields.routeType !== "outOfTown") return "Local";
@@ -180,6 +187,7 @@ function inventoryHtml(request) {
 }
 function refresh() {
   syncConditions();
+  locationMaps.update();
   const draft = collectDraft();
   const request = createRequest(draft, { id: "MF-BORRADOR", createdAt: new Date().toISOString() });
   const f = request.fields;
@@ -293,6 +301,7 @@ function navigateTo(target) {
 }
 function resetDraft() {
   form.reset(); state.rooms = emptyCounts(ROOMS); state.inventory = emptyCounts(ITEMS); state.prepared = null; state.request = null; state.draftWarning = ""; state.activeRoom = "all";
+  locationMaps.reset();
   document.querySelectorAll(".field-error").forEach((error) => { error.textContent = ""; });
   form.querySelectorAll("[aria-invalid]").forEach((field) => setError(field));
   renderRooms(); renderInventory(); setDefaultDate(); showStep(1);

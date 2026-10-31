@@ -11,6 +11,17 @@ const optionalNumber = (value, max, min = 0) => value === "" || value === null |
 const yesNo = ["yes", "no", "unknown"];
 const round = (value, digits = 2) => Number(value.toFixed(digits));
 const countMap = (data, catalog, max) => Object.fromEntries(catalog.map(({ id }) => [id, integer(own(data, id), max)]));
+const otherPropertyText = (value) => text(value, 120).replace(/\s+/g, " ").trim();
+
+/** Descripción de origen para fichas y resúmenes; siempre es texto, no HTML. */
+export function propertyLabel(fields, endpoint) {
+  if (!["origin", "destination"].includes(endpoint)) return "Por definir";
+  const selected = own(fields, `${endpoint}Property`);
+  if (selected === "other") return endpoint === "origin"
+    ? `Otro: ${otherPropertyText(own(fields, "originPropertyOther")) || "por describir"}`
+    : "Por definir";
+  return typeof selected === "string" && Object.hasOwn(PROPERTY_TYPES, selected) ? PROPERTY_TYPES[selected] : "Por definir";
+}
 
 function date(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
@@ -49,7 +60,8 @@ export function normalizeDraft(data = {}) {
   for (const endpoint of ["origin", "destination"]) {
     const floor = integer(own(source, `${endpoint}Floor`), 50);
     const selectedAccess = choice(own(source, `${endpoint}Access`), Object.keys(ACCESS_TYPES), floor ? "stairs" : "ground");
-    fields[`${endpoint}Property`] = choice(own(source, `${endpoint}Property`), Object.keys(PROPERTY_TYPES), "house");
+    const propertyTypes = Object.keys(PROPERTY_TYPES).filter((type) => endpoint === "origin" || type !== "other");
+    fields[`${endpoint}Property`] = choice(own(source, `${endpoint}Property`), propertyTypes, "house");
     fields[`${endpoint}Floor`] = floor;
     fields[`${endpoint}Access`] = floor === 0 ? "ground" : selectedAccess === "ground" ? "stairs" : selectedAccess;
     fields[`${endpoint}ElevatorFloors`] = fields[`${endpoint}Access`] === "combined" ? integer(own(source, `${endpoint}ElevatorFloors`), floor) : 0;
@@ -57,6 +69,9 @@ export function normalizeDraft(data = {}) {
     fields[`${endpoint}CarryMeters`] = fields[`${endpoint}CarryRange`] === "over30" ? optionalNumber(own(source, `${endpoint}CarryMeters`), 2000, 31) : "";
     fields[`${endpoint}Shuttle`] = choice(own(source, `${endpoint}Shuttle`), yesNo, "unknown");
   }
+  // No conservar descripciones ocultas al cambiar a una opción del catálogo.
+  // La ausencia del campo en los demás casos mantiene estables fichas anteriores.
+  if (fields.originProperty === "other") fields.originPropertyOther = otherPropertyText(own(source, "originPropertyOther"));
   fields.packingType = choice(own(source, "packingType"), ["none", "partial", "full", "boxes", "undecided"], "undecided");
   fields.boxCount = ["boxes", "partial", "full"].includes(fields.packingType) ? integer(own(source, "boxCount"), 5000) : 0;
   fields.packingAcknowledged = fields.packingType === "none" && checked(own(source, "packingAcknowledged"));
@@ -155,7 +170,7 @@ export function buildRequestText(request) {
     const access = fields[`${endpoint}Access`];
     const carryRange = fields[`${endpoint}CarryRange`];
     lines.push("", label, fields[endpoint] || "Domicilio por confirmar",
-      `Inmueble: ${PROPERTY_TYPES[fields[`${endpoint}Property`]]}`,
+      `Inmueble: ${propertyLabel(fields, endpoint)}`,
       `Nivel: ${floor === 0 ? "PB" : `Piso ${floor}`} · Acceso: ${ACCESS_TYPES[access]}`);
     if (access === "combined") lines.push(`Acceso combinado: ${fields[`${endpoint}ElevatorFloors`]} niveles con elevador y ${floor - fields[`${endpoint}ElevatorFloors`]} por escaleras`);
     lines.push(`Acarreo: ${CARRY_RANGES[carryRange]}${carryRange === "over30" && fields[`${endpoint}CarryMeters`] !== "" ? ` (${numeric.format(fields[`${endpoint}CarryMeters`])} m informados)` : ""}`,

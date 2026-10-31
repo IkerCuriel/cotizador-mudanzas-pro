@@ -15,7 +15,7 @@ export const ROOMS = [
 
 export const PROPERTY_TYPES = {
   house: "Casa", apartment: "Departamento", storage: "Bodega", duplex: "Casa dúplex",
-  residential: "Residencial", residentialPlus: "Residencial plus", office: "Oficina",
+  residential: "Residencial", residentialPlus: "Residencial plus", office: "Oficina", other: "Otro",
 };
 export const ACCESS_TYPES = {
   stairs: "Escaleras", elevator: "Elevador", combined: "Combinados", ground: "Acceso directo en PB",

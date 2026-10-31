@@ -2,7 +2,7 @@
 
 Se implementó Supabase Auth + PostgreSQL con permisos en la base de datos. La página usa únicamente la URL y la clave pública de Supabase; no requiere ni debe incluir una clave `service_role`. **La nube de producción, las cuentas y los avisos al teléfono siguen pendientes de activación.** Las migraciones no publican servicios, crean cuentas reales ni envían mensajes por sí solas.
 
-Aplicar en orden `202610300001_platform.sql` (cuentas y solicitudes), `202610300002_family_team_security.sql` (varios asesores familiares y segundo factor) `202610300003_push_notifications.sql` (dispositivos y cola de avisos) y `202610300004_business_routing.sql` (negocios, equipos y cuotas). No volver a ejecutar migraciones ya aplicadas ni reinicializar una base con datos reales.
+Aplicar en orden `202610300001_platform.sql` (cuentas y solicitudes), `202610300002_family_team_security.sql` (varios asesores familiares y segundo factor) `202610300003_push_notifications.sql` (dispositivos y cola de avisos) `202610300004_business_routing.sql` (negocios, equipos y cuotas) y `202610300005_other_property.sql` (otro inmueble en origen). No volver a ejecutar migraciones ya aplicadas ni reinicializar una base con datos reales.
 
 ## Destino por negocio y costo acotado
 

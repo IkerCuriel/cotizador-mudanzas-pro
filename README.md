@@ -77,6 +77,7 @@ Los avisos del panel y el canal Web Push están implementados, pero no activos e
 
 ## Documentación vigente
 
+- [Mapas, ubicaciones y otro tipo de inmueble](docs/mapas-y-ubicaciones.md).
 - [Arquitectura por negocio, flujo de datos y costos](docs/arquitectura-y-costos.md).
 - [Lanzamiento, infraestructura, cuentas y costos](docs/lanzamiento.md).
 - [Operación, privacidad y preparación comercial](docs/operacion-y-privacidad.md).
