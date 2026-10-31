@@ -93,3 +93,88 @@
   .profile-gallery { grid-template-columns: 1fr; }
   .profile-sections { gap: 20px; }
 }
+
+/* Match the refreshed MoveFlow palette while keeping the company profile distinct. */
+.profile-page { --navy: #193c32; --ink: #203e35; --muted: #63736c; --brand: #b44c2b; --brand-dark: #9b3d21; --line: #e0e6de; --line-strong: #becdc3; color: #203e35; background: #faf9f5; }
+.profile-back { color: #617363; margin-bottom: 27px; }
+.profile-hero { padding: 48px; color: #203e35; background: #edf2e8; border: 1px solid #e0e8da; border-radius: 28px; gap: 5%; }
+.profile-hero .eyebrow { color: #5d745c; font-size: 10px; letter-spacing: 1.4px; }
+.profile-identity { margin-top: 28px; margin-bottom: 26px; gap: 18px; }
+.profile-monogram { width: 78px; height: 78px; color: #f0e8d4; background: #315a42; border-color: #315a42; border-radius: 22px; font-size: 28px; letter-spacing: -1px; }
+.profile-kind { color: #65785f; font-size: 12px; }
+.profile-hero h1 { color: #1e4634; font-size: clamp(30px, 3.3vw, 46px); letter-spacing: -1.6px; }
+.profile-headline { color: #5d7e5d; font-size: 22px; line-height: 1.45; letter-spacing: -.45px; }
+.profile-description { color: #566f5e; font-size: 15px; line-height: 1.85; }
+.profile-hero-actions { gap: 18px; margin-top: 30px; }
+.profile-hero-link { color: #42674b; font-size: 13px; }
+.profile-hero-link:hover { color: #244d33; }
+.profile-page .button--primary { color: white; background: #b44c2b; border-color: #b44c2b; border-radius: 12px; }
+.profile-page .button--primary:hover { color: white; background: #973d22; border-color: #973d22; }
+.profile-contact { padding: 29px; color: white; background: #234b3c; border-color: #234b3c; border-radius: 21px; box-shadow: 0 16px 30px #1d4a3220; }
+.profile-contact-icon { color: #dce8ce; background: #3b634c; border-radius: 13px; }
+.profile-contact h2 { color: #f4f5e9; font-size: 25px; margin-top: 23px; letter-spacing: -.8px; }
+.profile-contact p { color: #d0ddcc; font-size: 13px; }
+.profile-contact small { color: #c6d6c2; font-size: 11px; line-height: 1.75; }
+.profile-contact .button--contact { color: #244b36; background: #edf1df; border-color: #edf1df; border-radius: 12px; font-size: 13px; }
+.profile-contact .button--contact:hover { color: #173c29; background: #fffdf0; border-color: #fffdf0; }
+.profile-sections { gap: 33px; margin-top: 28px; padding-bottom: 22px; border-color: #dfe7d9; }
+.profile-sections a { color: #5c745e; font-size: 13px; }
+.profile-section { margin: 57px 0; }
+.profile-section h2, .profile-process h2 { color: #244a35; font-size: clamp(27px, 2.7vw, 35px); letter-spacing: -1.1px; }
+.profile-section-heading > p { color: #637561; font-size: 13px; }
+.profile-services { gap: 20px; }
+.profile-services article { padding: 29px; border-color: #e1e7dc; border-radius: 18px; box-shadow: 0 6px 25px #33532c08; }
+.profile-service-number { width: 34px; height: 34px; display: inline-grid; place-items: center; color: #8b6949; background: #f2ece0; border-radius: 10px; font-size: 10px; }
+.profile-services h3 { margin-top: 19px; color: #2a4a35; font-size: 17px; }
+.profile-services p { color: #667765; font-size: 13px; line-height: 1.8; }
+.profile-gallery-empty { background: #f3f5ec; border-color: #cbd9c1; border-radius: 21px; }
+.profile-gallery-icon { color: #819171; background: #e6eddb; }
+.profile-gallery-empty h3 { color: #45603d; }
+.profile-gallery-empty p { color: #687860; font-size: 13px; }
+.profile-section-heading > .mini-badge { border-radius: 99px; padding: 6px 11px; background: #edf1e4; }
+.profile-gallery figure { border-radius: 17px; border-color: #dfe6d8; }
+.profile-process { padding-top: 42px; border-color: #dfe7d9; }
+.profile-process li > span { width: 36px; height: 36px; border: 0; border-radius: 12px; color: #5d7554; background: #ecf1e3; }
+.profile-process h3 { color: #35543d; font-size: 15px; }
+.profile-process li p, .profile-process > div > p { color: #677963; font-size: 13px; }
+.profile-bottom-cta { padding: 34px 37px; background: #edf3e5; border-color: #dce6d3; border-radius: 21px; }
+.profile-bottom-cta h2 { color: #34563b; font-size: 23px; }
+.profile-bottom-cta p { color: #60765c; font-size: 13px; }
+@media (max-width: 1000px) {
+  .profile-hero { padding: 34px; }
+  .profile-monogram { width: 63px; height: 63px; font-size: 25px; border-radius: 18px; }
+  .profile-hero h1 { font-size: 32px; }
+  .profile-headline { font-size: 21px; }
+  .profile-contact { padding: 25px; }
+  .profile-services article { padding: 23px; }
+}
+@media (max-width: 760px) {
+  .profile-hero { padding: 31px; gap: 30px; border-radius: 24px; }
+  .profile-identity { margin-top: 24px; }
+  .profile-hero h1 { font-size: 35px; }
+  .profile-description { max-width: 570px; font-size: 14px; }
+  .profile-contact h2 { margin-top: 17px; }
+  .profile-services { gap: 14px; }
+  .profile-services article { padding: 25px; }
+  .profile-services h3 { margin-top: 15px; }
+  .profile-sections { gap: 23px; }
+  .profile-section { margin: 41px 0; }
+  .profile-process { margin-top: 43px; padding-top: 34px; }
+  .profile-bottom-cta { padding: 28px; }
+}
+@media (max-width: 450px) {
+  .profile-hero { padding: 27px 23px; }
+  .profile-identity { gap: 13px; align-items: center; }
+  .profile-monogram { width: 50px; height: 56px; font-size: 22px; border-radius: 15px; }
+  .profile-kind { font-size: 11px; }
+  .profile-hero h1 { font-size: 29px; line-height: 1.2; letter-spacing: -1.1px; }
+  .profile-headline { font-size: 20px; }
+  .profile-description { font-size: 14px; }
+  .profile-hero-actions > .button { width: 100%; }
+  .profile-contact { padding: 25px 22px; }
+  .profile-contact h2 { font-size: 24px; }
+  .profile-sections { gap: 22px; }
+  .profile-sections a { font-size: 12px; }
+  .profile-gallery-empty { padding: 26px; }
+  .profile-section h2, .profile-process h2 { font-size: 28px; }
+}

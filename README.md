@@ -112,3 +112,5 @@ No abrir registros públicos hasta configurar el correo de autenticación, compl
 - [Mapas y múltiples destinos](docs/mapas-y-ubicaciones.md).
 - [Activar Google Places cuando se configure Google Cloud](docs/google-places.md).
 - [Perfil de empresa y fotografías reales](docs/perfiles-de-negocio.md).
+
+- [Envío, recuperación de la ficha y nueva solicitud](docs/envio-y-nueva-solicitud.md).

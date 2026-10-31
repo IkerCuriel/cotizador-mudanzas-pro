@@ -5,12 +5,15 @@ import { buildBusinessWhatsAppUrl } from "./config.js";
 import { isCloudConfigured, getSession, getPublicSettings, submitBusinessRequest, accountUrl, cloudErrorMessage } from "./cloud.js";
 import { LEGAL_READY } from "./legal-config.js";
 import { setupLocationMaps } from "./maps.js";
+import { createSubmissionLifecycle, clearStoredDraft, ACTIVE_DRAFT_KEY, LEGACY_DRAFT_KEY } from "./submission-lifecycle.js";
 
-const DRAFT_KEY = "moveflow-request-draft-v1";
-const LEGACY_KEY = "moveflow-quote-draft";
+const DRAFT_KEY = ACTIVE_DRAFT_KEY;
+const LEGACY_KEY = LEGACY_DRAFT_KEY;
 const form = document.getElementById("movingQuoteForm");
 const modal = document.getElementById("quoteModal");
 const locationMaps = setupLocationMaps();
+const submissions = createSubmissionLifecycle();
+let receiptElement;
 const state = { step: 1, rooms: {}, inventory: {}, activeRoom: "all", variants: {}, request: null, prepared: null, draftWarning: "" };
 const emptyCounts = (items) => Object.fromEntries(items.map((item) => [item.id, 0]));
 const valueOf = (id) => document.getElementById(id)?.value ?? "";
@@ -21,7 +24,7 @@ const windowLabels = { anytime: "Cualquier horario", morning: "Mañana", afterno
 const answerLabels = { yes: "Sí", no: "No", unknown: "Por confirmar" };
 let modalTrigger;
 let preparedShareMessage = "";
-let cloudState = { session: null, settings: null, sending: false, sentReference: null };
+let cloudState = { session: null, settings: null, sending: false };
 
 function text(id, value) { const element = document.getElementById(id); if (element) element.textContent = value; }
 function escapeHtml(value) {
@@ -220,6 +223,8 @@ function restoreDraft() {
     const legacy = raw ? null : localStorage.getItem(LEGACY_KEY);
     if (!raw && !legacy) return;
     const source = JSON.parse(raw || legacy);
+    // A prior handoff retired this draft even if a quota error prevented rewriting it.
+    if (raw && submissions.retiredDraft(source.prepared?.id)) { clearStoredDraft(localStorage); return; }
     const draft = raw ? normalizeDraft(source) : migrateLegacyDraft(source);
     state.rooms = { ...emptyCounts(ROOMS), ...draft.rooms };
     state.inventory = { ...emptyCounts(ITEMS), ...draft.inventory };
@@ -304,7 +309,7 @@ function navigateTo(target) {
   showStep(target);
 }
 function resetDraft() {
-  form.reset(); state.rooms = emptyCounts(ROOMS); state.inventory = emptyCounts(ITEMS); state.prepared = null; state.request = null; state.draftWarning = ""; state.activeRoom = "all";
+  form.reset(); state.rooms = emptyCounts(ROOMS); state.inventory = emptyCounts(ITEMS); state.prepared = null; state.request = null; state.draftWarning = ""; state.activeRoom = "all"; state.variants = {};
   locationMaps.reset();
   document.querySelectorAll(".field-error").forEach((error) => { error.textContent = ""; });
   form.querySelectorAll("[aria-invalid]").forEach((field) => setError(field));
@@ -321,18 +326,26 @@ function prepareRequest() {
   let request;
   let storageError = "";
   try {
-    if (state.prepared?.fingerprint === fingerprint) request = loadRequests().find((entry) => entry.id === state.prepared.id && draftFingerprint(entry) === fingerprint);
+    if (state.prepared?.fingerprint === fingerprint) {
+      request = state.request?.id === state.prepared.id ? state.request : loadRequests().find((entry) => entry.id === state.prepared.id && draftFingerprint(entry) === fingerprint);
+    }
   } catch (error) { storageError = error.message; }
   request ??= createRequest(draft);
-  try { saveRequest(request); state.prepared = { id: request.id, fingerprint }; }
+  state.prepared = { id: request.id, fingerprint };
+  try { saveRequest(request); }
   catch (error) { storageError = error.message; }
-  state.request = request;
-  text("modalTitle", "Solicitud preparada");
   persistDraft(draft);
+  openPreparedRequest(request, { storageError });
+}
+
+function openPreparedRequest(request, { storageError = "", receiptMode = false } = {}) {
+  state.request = request;
+  text("modalTitle", receiptMode ? "Tu ficha anterior" : "Solicitud preparada");
   text("requestReference", request.id);
   document.getElementById("modalSummary").innerHTML = entriesHtml(summaryEntries(request));
   document.getElementById("modalInventory").innerHTML = inventoryHtml(request);
   text("submissionStatus", storageError ? `Ficha preparada, pero no guardada: ${storageError}. Descárgala o cópiala. No se ha enviado al negocio.` : "Ficha guardada en este navegador. Revisa los detalles y elige cómo enviarla al equipo. Prepararla aquí no la envía.");
+  if (receiptMode) text("submissionStatus", submissions.wasCloudSubmitted(request.id) ? "Esta solicitud ya se guardó en tu cuenta. Puedes consultar o volver a compartir esta misma ficha." : "Esta es la ficha que abriste para WhatsApp. Puedes volver a enviarla con la misma referencia; la web no confirma si el mensaje se envió.");
   const fullMessage = buildRequestText(request);
   const shortMessage = `SOLICITUD DE MUDANZA · ${request.id}\n${summaryEntries(request).filter(([label]) => ["Ruta", "Tipo de mudanza", "Fecha", "Contacto", "Preferencia de contacto"].includes(label)).map(([label, value]) => `${label}: ${value}`).join("\n")}\nInventario: ${request.totals.totalItems} artículos.\nMe gustaría que revisaran mi mudanza para acordar una propuesta. Compartiré la ficha completa por este chat.`;
   preparedShareMessage = fullMessage.length > 6000 ? shortMessage : fullMessage;
@@ -341,7 +354,6 @@ function prepareRequest() {
   document.querySelector(".prepared-details").open = false;
   if (fullMessage.length > 6000) text("submissionStatus", `${document.getElementById("submissionStatus").textContent} El mensaje se resumió por su extensión; comparte también la ficha completa con Copiar o Descargar.`);
   text("copyFeedback", "");
-  cloudState.sentReference = null;
   text("cloudSendStatus", "");
   updateCloudControls();
   modalTrigger = document.activeElement;
@@ -361,8 +373,8 @@ function updateCloudControls() {
   document.getElementById("networkConsent").checked = false;
   const button = document.getElementById("sendCloudRequest");
   button.hidden = !ready;
-  button.disabled = cloudState.sending || cloudState.sentReference === state.request?.id;
-  button.textContent = cloudState.sending ? "Enviando…" : cloudState.sentReference === state.request?.id ? "Solicitud guardada y enviada" : loggedIn ? "Guardar y enviar a D’Curiel" : "Entrar para guardar y enviar";
+  button.disabled = cloudState.sending || submissions.wasCloudSubmitted(state.request?.id);
+  button.textContent = cloudState.sending ? "Enviando…" : submissions.wasCloudSubmitted(state.request?.id) ? "Solicitud guardada y enviada" : loggedIn ? "Guardar y enviar a D’Curiel" : "Entrar para guardar y enviar";
   text("cloudAvailability", ready ? "Guardar y enviar registra la solicitud en tu cuenta y avisa al equipo autorizado de D’Curiel en su panel. El botón de WhatsApp abre una conversación aparte." : "La recepción en el panel todavía no está activa. La ficha solo llega al negocio si tú la compartes por WhatsApp.");
 }
 
@@ -374,28 +386,84 @@ async function loadCloudState() {
   updateCloudControls();
 }
 
+function renderSubmissionReceipt() {
+  const receipt = submissions.getReceipt();
+  if (!receipt) return;
+  if (!receiptElement) {
+    receiptElement = document.createElement("section");
+    receiptElement.className = "submission-receipt";
+    receiptElement.id = "submissionReceipt";
+    receiptElement.tabIndex = -1;
+    receiptElement.setAttribute("aria-label", "Tu ficha anterior");
+    receiptElement.setAttribute("role", "status");
+    document.querySelector(".quote-card__header").after(receiptElement);
+  }
+  const heading = document.createElement("strong");
+  heading.textContent = receipt.channel === "cloud" ? "Solicitud recibida por el negocio" : "Tu ficha está lista para WhatsApp";
+  const reference = document.createElement("p"); reference.className = "submission-receipt__reference";
+  reference.textContent = `Referencia: ${receipt.id}`;
+  const description = document.createElement("p");
+  description.textContent = receipt.channel === "cloud"
+    ? "Puedes empezar otra solicitud. Si vuelves a compartir esta ficha, conservará su referencia para reconocer duplicados."
+    : "Confirma el envío dentro de WhatsApp. Puedes empezar otra solicitud o volver a abrir esta ficha con la misma referencia.";
+  const content = document.createElement("div"); content.className = "submission-receipt__content";
+  content.append(heading, reference, description);
+  const reopen = document.createElement("button"); reopen.type = "button"; reopen.className = "button button--secondary";
+  reopen.id = "reopenLastRequest"; reopen.textContent = "Ver ficha anterior"; reopen.disabled = !receipt.recoverable;
+  reopen.addEventListener("click", () => { const previous = submissions.getRequest(); if (previous) openPreparedRequest(previous, { receiptMode: true }); });
+  receiptElement.replaceChildren(content, reopen);
+  if (!receipt.persisted || !receipt.recoverable) {
+    const warning = document.createElement("p"); warning.className = "submission-receipt__warning";
+    warning.textContent = receipt.recoverable ? "La copia recuperable sigue abierta en esta página. Descárgala antes de cerrarla si tu navegador no permite guardar datos." : "La copia local de esta ficha no está disponible. Conserva el mensaje enviado o el archivo descargado.";
+    content.append(warning);
+  }
+}
+
+function completeSubmission(request, channel) {
+  const modalOpen = modal.classList.contains("is-open");
+  const showingThisRequest = state.request?.id === request.id && modalOpen;
+  // A late response can retire draft A while the customer reviews receipt B.
+  // Preserve the independently displayed snapshot and its existing share link.
+  const otherDisplayedRequest = modalOpen && !showingThisRequest ? state.request : null;
+  const result = submissions.complete(request, { channel, prepared: state.prepared, currentFingerprint: draftFingerprint(collectDraft()) });
+  if (result.detachPrepared) state.prepared = null;
+  if (result.clearDraft) {
+    try { clearStoredDraft(localStorage); } catch { /* In-memory recovery remains available. */ }
+    if (showingThisRequest) closeModal({ restoreFocus: false });
+    resetDraft();
+    if (otherDisplayedRequest) state.request = otherDisplayedRequest;
+  } else {
+    // An old request may finish after another draft has started. Never reset that draft.
+    if (result.detachPrepared) persistDraft();
+    if (showingThisRequest) closeModal();
+  }
+  renderSubmissionReceipt();
+  if (otherDisplayedRequest && !modalTrigger?.isConnected) modalTrigger = document.getElementById("reopenLastRequest");
+  if ((result.clearDraft || showingThisRequest) && !modal.classList.contains("is-open")) receiptElement?.focus({ preventScroll: true });
+}
+
 async function sendCloudRequest() {
-  if (!state.request || cloudState.sending || cloudState.sentReference === state.request.id) return;
+  if (!state.request || cloudState.sending || submissions.wasCloudSubmitted(state.request.id)) return;
   if (!isCloudConfigured || !LEGAL_READY || !cloudState.settings?.accepting_requests || cloudState.settings?.business_routing_version !== 1 || cloudState.settings?.route_destinations_version !== 1) return;
   if (!cloudState.session) { window.location.href = accountUrl("index.html#retomar"); return; }
+  const submittedRequest = state.request; // Capture before awaiting: another draft may be opened meanwhile.
   cloudState.sending = true;
   updateCloudControls();
   text("cloudSendStatus", "Enviando la solicitud…");
   try {
-    const payload = { ...state.request, fields: { ...state.request.fields, networkConsent: false } };
+    const payload = { ...submittedRequest, fields: { ...submittedRequest.fields, networkConsent: false } };
     await submitBusinessRequest(payload);
-    cloudState.sentReference = state.request.id;
-    text("cloudSendStatus", "Solicitud recibida por Mudanzas D’Curiel. Su equipo autorizado tiene una notificación en el panel. Puedes consultar el seguimiento en tu cuenta.");
-    text("submissionStatus", "Tu solicitud está guardada en tu cuenta. Enviar la ficha no reserva la mudanza ni fija un precio.");
-    text("modalTitle", "Solicitud enviada");
+    completeSubmission(submittedRequest, "cloud");
   } catch (error) {
-    text("cloudSendStatus", cloudErrorMessage(error, "No pudimos confirmar la recepción. Reintenta con esta misma ficha; no se duplicará si ya fue recibida."));
+    if (state.request?.id === submittedRequest.id) text("cloudSendStatus", cloudErrorMessage(error, "No pudimos confirmar la recepción. Tu formulario se conserva. Reintenta con esta misma ficha; no se duplicará si ya fue recibida."));
   } finally { cloudState.sending = false; updateCloudControls(); }
 }
-function closeModal() {
+function closeModal({ restoreFocus = true } = {}) {
   modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true");
-  document.querySelector(".page-shell").inert = false; document.body.style.overflow = ""; modalTrigger?.focus();
+  document.querySelector(".page-shell").inert = false; document.body.style.overflow = "";
+  if (restoreFocus && modalTrigger?.isConnected) modalTrigger.focus();
 }
+
 async function copyRequest() {
   if (!state.request) return;
   try {
@@ -457,9 +525,14 @@ form.addEventListener("submit", (event) => {
   prepareRequest();
 });
 document.getElementById("closeModal").addEventListener("click", closeModal);
-document.getElementById("shareWhatsApp").addEventListener("click", () => {
-  text("shareFeedback", "WhatsApp se abre con tu ficha. Pulsa Enviar en esa aplicación para que Mudanzas D’Curiel la reciba.");
-});
+function handoffWhatsApp(event) {
+  if (event.defaultPrevented || (event.type === "auxclick" && event.button !== 1) || !state.request) return;
+  // Do not change the anchor href or prevent its native navigation. This is a handoff,
+  // not proof of delivery; the customer still presses Send inside WhatsApp.
+  completeSubmission(state.request, "whatsapp");
+}
+document.getElementById("shareWhatsApp").addEventListener("click", handoffWhatsApp);
+document.getElementById("shareWhatsApp").addEventListener("auxclick", handoffWhatsApp);
 document.getElementById("sendCloudRequest").addEventListener("click", sendCloudRequest);
 document.getElementById("copyQuote").addEventListener("click", copyRequest);
 document.getElementById("downloadRequest").addEventListener("click", downloadRequest);
@@ -481,7 +554,7 @@ document.addEventListener("keydown", (event) => {
 });
 state.rooms = emptyCounts(ROOMS); state.inventory = emptyCounts(ITEMS);
 renderBusinessContact();
-restoreDraft(); setDefaultDate(); renderRooms(); renderInventory(); showStep(1, false);
+restoreDraft(); setDefaultDate(); renderRooms(); renderInventory(); showStep(1, false); renderSubmissionReceipt();
 text("currentYear", String(new Date().getFullYear()));
 if (location.hash === "#retomar") showStep(4);
 loadCloudState();
