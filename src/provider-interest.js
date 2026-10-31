@@ -8,7 +8,6 @@ export const PROVIDER_PLANS = Object.freeze({
   annual_1440: Object.freeze({ code: 'annual_1440', currency: 'MXN', amount: 1440, months: 12, monthlyPrice: 120, checkoutEnabled: false }),
 });
 export const PROVIDER_PLAN = PROVIDER_PLANS.monthly_149;
-export const PROVIDER_INBOX = 'iker.san.cu@gmail.com';
 const serviceNames = { local: 'Locales', nationwide: 'Foráneas', both: 'Locales y foráneas' };
 const limits = { company: 120, contact: 100, email: 254, phone: 40, businessLocation: 500, coverage: 180, notes: 400 };
 const optional = new Set(['coverage', 'notes']);
@@ -45,9 +44,8 @@ export function prepareProviderInterest(source) {
   const planDescription = plan.months === 12
     ? `Anual: $${plan.amount.toLocaleString('es-MX')} ${plan.currency} en un solo pago por 12 meses (equivalente a $${plan.monthlyPrice} al mes). Ahorro de $348 frente a 12 mensualidades de $149.`
     : `Mensual: $${plan.amount} ${plan.currency} al mes.`;
-  const subject = 'MoveFlow · Solicitud de perfil para negocio de mudanzas';
   const body = [
-    'Hola, me interesa solicitar un perfil de negocio en MoveFlow.', '',
+    'SOLICITUD DE PERFIL DE NEGOCIO', '',
     `Empresa: ${v.company}`, `Persona de contacto: ${v.contact}`, `Correo: ${v.email}`,
     `WhatsApp: ${v.phone}`, `Ubicación del negocio: ${v.businessLocation}`,
     ...(location.searchUrl ? [`Google Maps${v.businessLocationPlace ? ' (lugar seleccionado)' : ' (referencia por revisar)'}: ${location.searchUrl}`] : []),
@@ -58,5 +56,5 @@ export function prepareProviderInterest(source) {
     'Esta solicitud no autoriza un cargo ni crea automáticamente una cuenta.',
     'Autorizo que me contacten para gestionar esta solicitud de alta.',
   ].join('\n');
-  return { subject, body, href: `mailto:${PROVIDER_INBOX}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` };
+  return { body, values: v };
 }

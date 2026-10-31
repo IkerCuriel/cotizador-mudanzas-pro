@@ -14,7 +14,7 @@ Completar en un expediente privado, nunca en el repositorio público:
 - Función en el tratamiento de datos, condiciones de confidencialidad, destinatarios y conservación.
 - Fecha, versión de condiciones y evidencia de aceptación.
 
-El piloto comienza con los contactos comerciales Tere Curiel y Marco Curiel. Sus nombres y teléfonos no reemplazan la identidad de la empresa que presta el transporte. Una aprobación de acceso no debe anunciarse como certificación integral del prestador.
+El piloto comienza con Mudanzas D’Curiel y sus usuarios autorizados. Los datos internos de sus asesores no reemplazan la identidad de la empresa que presta el transporte. Una aprobación de acceso no debe anunciarse como certificación integral del prestador.
 
 ## Reglas propuestas para el piloto gratuito
 

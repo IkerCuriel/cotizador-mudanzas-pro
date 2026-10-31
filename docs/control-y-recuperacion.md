@@ -12,7 +12,7 @@ Actualizado: 30 de octubre de 2026. Este manual corresponde al proyecto **MoveFl
 | Sitio público actual | `https://moveflow-mudanzas.render-inspace.chatgpt.site/` |
 | Alojamiento actual | Sites, vinculado a tu cuenta; la consulta de acceso confirma el rol de propietario |
 | Datos y cuentas del negocio | Supabase: pendientes de conexión y activación; no se guardan en GitHub |
-| Contactos del piloto | Tere Curiel: 55 2906 1098; Marco Curiel: 56 1449 2452 |
+| Contacto público del piloto | Mudanzas D’Curiel: 55 2906 1098 |
 
 El código está en tu computadora y en tu repositorio. Puedes llevarlo a otro alojamiento. El subdominio `chatgpt.site` pertenece al proveedor; conservar una dirección propia al migrar requiere un dominio registrado bajo tu control. Tener el código no equivale a ser propietario de las marcas de terceros ni a tener registrada una marca o un dominio.
 
@@ -134,7 +134,7 @@ Referencias: [respaldos Supabase](https://supabase.com/docs/guides/platform/back
 
 - Identidad, domicilio y correo del responsable confirmados; aviso y condiciones revisados para la operación real.
 - Cuenta de propietario y recuperación de GitHub, alojamiento, dominio, correo y base bajo tu control.
-- Tere y Marco invitados a correos individuales, con contraseña propia y segundo factor; ninguna contraseña guardada en el repositorio.
+- Los asesores del negocio invitados a correos individuales, con contraseña propia y segundo factor; ninguna contraseña guardada en el repositorio.
 - Solicitud ficticia visible solo para el cliente, los asesores asignados y administración autorizada.
 - Avisos al teléfono probados en los dispositivos concretos; confirmación de recepción antes de prometer ese canal.
 - Respaldo de código verificado y restauración de datos de prueba documentada.

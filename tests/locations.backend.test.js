@@ -61,7 +61,7 @@ await test('destinos: PostgreSQL conserva rutas completas y limita campos sin am
       await db.exec('set role anon');
       try {
         const configuration = (await db.query('select public.public_site_config() as config')).rows[0].config;
-        assert.deepEqual(configuration, { accepting_requests: true, network_enabled: false, privacy_version: '2026-10-30', default_business_slug: 'd-curiel', business_routing_version: 1, route_destinations_version: 1 });
+        assert.deepEqual(configuration, { accepting_requests: true, network_enabled: false, privacy_version: '2026-10-30', default_business_slug: 'd-curiel', business_routing_version: 1, route_destinations_version: 1, provider_applications_version: 1, accepting_provider_applications: false });
       } finally { await db.exec('reset role'); }
     });
     await suite.test('envío, reintento y lectura autorizada conservan toda la ruta sin duplicar avisos', async () => {

@@ -4,7 +4,7 @@ Estado revisado: **30 de octubre de 2026**. Guía interna. Se complementa con [m
 
 ## Qué funciona y qué sigue pendiente
 
-La página prepara una ficha local y permite que el solicitante elija enviar su información por WhatsApp a **Tere Curiel (+52 55 2906 1098)** o **Marco Curiel (+52 56 1449 2452)**. Elegir un contacto no envía automáticamente a ambos. Las cuentas y recepción en Supabase requieren configuración externa; las notificaciones automáticas al teléfono y los cobros no están activos.
+La página prepara una ficha local y permite que el solicitante confirme su envío por WhatsApp a **Mudanzas D’Curiel**, mediante su línea comercial principal. No se envían copias automáticas a otros integrantes del equipo. Las cuentas y recepción en Supabase requieren configuración externa; las notificaciones automáticas al teléfono y los cobros no están activos.
 
 El nombre de producto es **MoveFlow**. Falta confirmar quién opera la plataforma, quién presta y cobra la mudanza y quién es responsable de los datos. No son necesariamente la misma persona. No inventar razón social, RFC, domicilio, garantías, certificaciones o pólizas.
 
@@ -14,7 +14,7 @@ El nombre de producto es **MoveFlow**. Falta confirmar quién opera la plataform
 | Responsable de datos | Identidad y domicilio real para el aviso | LFPDPPP art. 15 |
 | Canal de privacidad | Correo que se atienda y persona responsable | Derechos ARCO, reclamaciones y privacidad |
 | Prestador de mudanza | Identidad, RFC y datos de contratación del negocio | Presupuesto, contrato y comprobantes |
-| Participación de asesores | Confirmar si Tere y Marco actúan para el mismo responsable | Permisos, confidencialidad y posibles transferencias |
+| Participación de asesores | Confirmar si los asesores del negocio actúan para el mismo responsable | Permisos, confidencialidad y posibles transferencias |
 | Titularidad de infraestructura | Cuentas de GitHub, alojamiento, base de datos, correo y dominio | Control, recuperación y continuidad |
 | Activación de cuentas | Cuenta cloud, remitente de correo y pruebas reales de acceso | No ofrecer un registro que no funciona |
 
@@ -31,11 +31,11 @@ La bandera `VITE_PRIVACY_READY` no se debe cambiar solo para retirar un mensaje.
 5. Confirma los cambios por escrito antes de cobrar extras. No describas el piloto como seguro incluido, proveedor verificado, contratación garantizada o atención de emergencias permanente.
 6. Al cerrar, conserva únicamente lo justificado. No añadas el teléfono a campañas ni reenvíes la ficha fuera del equipo autorizado.
 
-Cada persona debe usar una cuenta individual. Los perfiles comerciales «Tere Curiel» y «Marco Curiel» describen usuarios; no acreditan quién es el prestador legal. Los teléfonos no son credenciales de acceso. Las contraseñas no deben almacenarse en documentación, repositorios, mensajes compartidos ni código del navegador.
+Cada persona debe usar una cuenta individual. Los perfiles internos describen usuarios del negocio; no acreditan por sí solos quién es el prestador legal. Los teléfonos no son credenciales de acceso. Las contraseñas no deben almacenarse en documentación, repositorios, mensajes compartidos ni código del navegador.
 
 ## Consentimiento y destinatarios
 
-El formulario debe enlazar el aviso antes de compartir, explicar qué información saldrá y a quién, y pedir una autorización expresa para la ficha, que puede incluir información patrimonial. La futura difusión a una red y la publicidad requieren elecciones separadas; no deben quedar premarcadas ni condicionar la atención familiar. Conservar versión, fecha, usuario cuando exista y destinatarios de cada envío.
+El formulario debe enlazar el aviso antes de compartir, explicar qué información saldrá y a quién, y pedir una autorización expresa para la ficha, que puede incluir información patrimonial. La futura difusión a una red y la publicidad requieren elecciones separadas; no deben quedar premarcadas ni condicionar la atención del negocio. Conservar versión, fecha, usuario cuando exista y destinatarios de cada envío.
 
 Antes de abrir la red, definir por contrato si cada participante trata datos por instrucciones del operador o como responsable independiente. Esa calificación depende de las funciones reales, no solo del nombre del contrato. Documentar finalidad, destinatarios, comunicaciones del aviso, consentimiento o excepción aplicable, prohibición de reventa y colaboración en derechos e incidentes. **No existe un directorio público de hogares.**
 
@@ -79,8 +79,8 @@ Las notificaciones del panel solo existen cuando la nube está conectada y la so
 
 - [ ] Identidad, domicilio, contacto de privacidad y prestador confirmados.
 - [ ] Avisos revisados y coherentes con el flujo efectivamente publicado.
-- [ ] Tere y Marco aceptaron confidencialidad, uso permitido y atención de derechos.
-- [ ] Ambos números probaron recepción con datos ficticios y las fichas no se envían sin elección.
+- [ ] Los asesores del negocio aceptaron confidencialidad, uso permitido y atención de derechos.
+- [ ] La línea comercial probó recepción con datos ficticios y las fichas no se envían sin confirmación del solicitante.
 - [ ] Hay persona asignada a reclamaciones y un sustituto.
 - [ ] Se documentaron conservación, proveedores y recuperación.
 - [ ] Si se abren cuentas: verificación de correo, recuperación, permisos y bajas probados en producción con cuentas de prueba.

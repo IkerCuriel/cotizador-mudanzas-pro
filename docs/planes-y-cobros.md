@@ -1,6 +1,6 @@
 # Planes y operación de accesos
 
-Estado: preparación local, 30 de octubre de 2026. La plataforma anuncia un plan mensual de **$149 MXN** y uno anual de **$1,440 MXN en un solo pago por 12 meses**, equivalente a **$120 al mes** (ahorro de $348 frente a 12 mensualidades de $149) y recibe solicitudes de alta por correo. Solicitar información no contrata una suscripción, no cobra y no crea una cuenta automáticamente. No hay una cuenta PayPal Business conectada ni una integración de pagos habilitada. Supabase, las cuentas reales y el correo de invitaciones también requieren activación.
+Estado: integración preparada, 30 de octubre de 2026. El propietario eligió pago por periodo: **$149 MXN por un mes** o **$1,440 MXN por 12 meses** (equivalente a $120 mensuales), **sin renovación automática**. Las solicitudes de alta pasan a la plataforma; se retiró el correo de alta. La conexión Supabase/PayPal y las pruebas reales siguen pendientes. Ningún flag de interfaz ni la publicación del código activa cobros.
 
 ## Qué queda implementado
 
@@ -36,21 +36,13 @@ La aprobación existente `set_provider_access` conserva su validación de vigenc
 
 Solo informa sobre el usuario actual. Exige correo verificado; para un proveedor sin MFA devuelve `false` y permite que configure su autenticador. Devuelve `true` únicamente con MFA y acceso autorizado a al menos un negocio. No devuelve razones de cortesía, precios ni beneficiarios. La interfaz puede usarlo para mostrar disponibilidad, pero las reglas SQL siguen siendo la autoridad. Ante error o migración ausente, la interfaz debe cerrar el acceso y no deducir una cortesía de campos locales. Volver a consultar después de confirmar MFA.
 
-## Conectar pagos después
+## Conectar los pagos preparados
 
-PayPal permite suscripciones recurrentes con cuenta Business habilitada, producto/plan y un servidor que verifica el estado de la suscripción. El botón y su retorno al navegador no bastan para otorgar acceso. [Integración oficial de suscripciones](https://developer.paypal.com/subscriptions/integrate/v6).
+La integración usa PayPal Orders v2 y vigencias por negocio, con captura verificada y webhooks firmados. Los secretos solo van en servidor. Cada compra requiere una cuenta verificada, MFA, empresa aprobada y membresía de propietario; no crea permisos por un correo ni por una página de retorno.
 
-Antes de cobrar:
+Consulta [activar PayPal](activar-paypal.md) para el propietario y [backend de pagos](backend-paypal.md) para configuración, contrato, idempotencia, conciliación y pruebas. La cuenta actual es Personal: debe completar la habilitación comercial antes de cobrar. La emisión de CFDI y las obligaciones fiscales no las realiza esta integración.
 
-1. El propietario crea o habilita su cuenta PayPal Business y configura personalmente su identidad, cuenta de recepción y retiro. No se presupone que el correo de solicitudes sea una cuenta de PayPal válida.
-2. Completar los datos del responsable y las condiciones de suscripción, precio final, impuestos/facturación, renovación, cancelación y reembolsos. Revisarlos antes de activar contrataciones.
-3. Conectar Supabase y correo de invitaciones; probar acceso, recuperación y MFA con cuentas reales de prueba.
-4. Implementar primero en Sandbox el producto y los planes de 149 MXN/mes y 1,440 MXN/año, creación de suscripción desde servidor y asociación al negocio y usuario verificados. Guardar secretos solo en el servidor, nunca como variables `VITE_`.
-5. Implementar comprobación servidor a servidor del beneficiario, plan permitido, importe, moneda, periodo y estado; procesar notificaciones firmadas de forma idempotente, incluidas renovaciones, impagos, cancelaciones y reembolsos. No asignar privilegios por un parámetro `success`, captura de pantalla o un identificador arbitrario enviado por el cliente. [Verificación de webhooks de PayPal](https://developer.paypal.com/api/rest/webhooks/rest/).
-6. Crear o invitar la cuenta solamente cuando la relación negocio/titular y el pago estén confirmados. El cliente debe establecer su propia contraseña; pagar no autoriza al sistema a aceptar sus términos por él.
-7. Probar alta, pago duplicado, evento repetido o fuera de orden, caída del servidor, renovación, cancelación, devolución y retiro de acceso antes de pasar a producción. Publicar un proceso de cancelación accesible antes de permitir renovación automática.
-
-PayPal descuenta comisiones por sus transacciones; el importe neto recibido será menor que el importe bruto de 149 o 1,440 pesos, según las comisiones aplicables. Consultar las tarifas vigentes de la cuenta antes de estimar ingresos. [Tarifas de PayPal México](https://www.paypal.com/mx/business/paypal-business-fees). El alojamiento gratuito no convierte el procesamiento de pagos en gratuito.
+Los periodos pagados se guardan en tablas privadas por empresa. Las cortesías y permisos temporales conservan su comportamiento anterior. Los reembolsos/reversiones revocan el periodo afectado y deben conciliarse según la política comercial publicada. No se prometen funciones ni solicitudes que todavía estén inactivas.
 
 ## Validación
 

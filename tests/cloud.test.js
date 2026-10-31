@@ -67,6 +67,17 @@ test('unconfigured cloud is disabled and never claims a request was submitted', 
   await assert.rejects(submitCloudRequest({ id: 'MF-test', fields: { privacyConsent: true } }), /preparando las cuentas/);
 });
 
+test('payment login preserves only a validated purchase reference and plan, never payment or auth claims', () => {
+  const base = 'https://example.com/cuenta.html';
+  const id = 'd946b38a-4751-44b1-98c4-4636855367aa';
+  const safe = new URL(safeReturnUrl(`pago.html?purchase=${id}&plan=annual_1440&token=PAYPAL&access_token=secret&paid=true&amount=1`, base));
+  assert.equal(safe.href, `https://example.com/pago.html?purchase=${id}&plan=annual_1440`);
+  assert.equal(safeReturnUrl('pago.html?purchase=bad&plan=unknown&cancelled=1', base), 'https://example.com/pago.html?cancelled=1');
+  assert.equal(safeReturnUrl(`pago.html?purchase=${id}&purchase=${id}&plan=annual_1440&plan=monthly_149`, base), 'https://example.com/pago.html');
+  assert.equal(safeReturnUrl('mudanceros.html?plan=annual_1440#solicitar-perfil', base), 'https://example.com/mudanceros.html?plan=annual_1440#solicitar-perfil');
+  assert.equal(safeReturnUrl(`https://evil.example/pago.html?purchase=${id}`, base), 'https://example.com/panel.html');
+});
+
 test('cloud submission requires explicit consent for the selected audience', async () => {
   await assert.rejects(submitCloudRequest({ id: 'MF-test', fields: {} }), /autoriza el contacto/);
   await assert.rejects(submitCloudRequest({ id: 'MF-test', fields: { privacyConsent: true } }, 'network'), /Autoriza expresamente/);

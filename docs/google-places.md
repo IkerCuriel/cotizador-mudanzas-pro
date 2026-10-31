@@ -1,6 +1,22 @@
 # Sugerencias de ubicaciones con Google Places
 
-La integración está **preparada, todavía sin activar**. El propietario indicó que aún no tiene el proyecto de Google Cloud. No se ha creado una cuenta de facturación, contratado un servicio ni configurado una clave. Sin clave válida, el módulo no carga el SDK ni consulta sugerencias. La escritura manual y la vista previa de Google Maps siguen siendo el recurso disponible.
+La facturación ya fue activada personalmente por el propietario. Se habilitaron Maps JavaScript API, Places API (New) y Maps Embed API; la clave de navegador quedó restringida a esas tres API y al dominio público de MoveFlow, y se configuró en `.env.local` (ignorado por Git). La comprobación real de sugerencias debe realizarse después de publicar. El código no carga el SDK si falta la clave. No se contrató un plan de suscripción de Maps.
+
+## Costo de la integración actual
+
+Precios globales de pago por uso revisados el 30 de octubre de 2026; no son una cotización ni un límite contractual de gasto:
+
+| Uso | Cuota mensual sin cargo publicada | Siguiente tramo, USD por 1,000 eventos |
+| --- | --- | --- |
+| Autocomplete Requests | 10,000 | $2.83 |
+| Place Details Essentials (dirección seleccionada) | 10,000 | $5.00 |
+| Maps Embed API | Sin cargo por uso | Sin cargo por uso |
+
+Se cuentan eventos de cada producto, no usuarios: escribir en varios campos puede generar varias consultas. La integración agrupa consultas por sesión; las primeras 12 de una sesión terminada en Place Details Essentials cuentan como Autocomplete Requests y las posteriores de esa sesión tienen tratamiento distinto. Las sesiones abandonadas siguen contabilizando consultas. El precio efectivo depende del uso, los campos pedidos, impuestos, moneda y condiciones de la cuenta. No presupuestar cero por tener pocos visitantes ni confundirlo con el antiguo crédito mensual universal.
+
+Fuentes: [tabla oficial de precios](https://developers.google.com/maps/billing-and-pricing/pricing), [sesiones y tarifas](https://developers.google.com/maps/documentation/javascript/session-pricing), [Maps Embed](https://developers.google.com/maps/documentation/embed/usage-and-billing).
+
+Una alerta de presupuesto avisa, **no detiene automáticamente la facturación**. Configurar cuotas admitidas por cada API, restricciones de clave y alertas, revisar consumo real y reducir tráfico abusivo. [Presupuestos de Google Cloud](https://docs.cloud.google.com/billing/docs/how-to/budgets).
 
 ## Activación cuando el propietario decida
 
@@ -40,8 +56,18 @@ if (client.available) {
 
 El desplegable debe mostrar atribución **Google Maps** cerca de las sugerencias y dentro del mismo contenedor, separadas visualmente del contenido propio. Preferir el logotipo oficial; para la interfaz compacta puede usarse el texto con `translate="no"`, sin saltos, peso normal, fuente sans serif, tamaño de 12–16 px y contraste suficiente. No atribuir a Google resultados inventados, manuales o de otra fuente. La vista de mapa mantiene la atribución incluida. [Requisitos de atribución](https://developers.google.com/maps/documentation/javascript/policies).
 
-Los **place IDs** se pueden conservar según su [documentación oficial](https://developers.google.com/maps/documentation/places/web-service/place-id). El proyecto no debe convertir las sugerencias en un catálogo propio, almacenar respuestas completas ni conservar coordenadas o fotografías de Places.
+Los **place IDs** pueden conservarse indefinidamente; Google recomienda actualizar los que tengan más de doce meses. Esa excepción no se extiende automáticamente a su dirección o nombre. [Guía oficial de place IDs](https://developers.google.com/maps/documentation/places/web-service/place-id).
 
-**Pendiente antes de activar con datos reales:** revisar el uso concreto conforme al contrato aplicable. La [política de Maps JavaScript, apartado «Autocomplete for end user addresses»](https://developers.google.com/maps/documentation/javascript/policies#autocomplete-for-end-user-addresses) sí prevé una excepción limitada: dirección postal que el usuario habría proporcionado completa y correctamente sin Autocomplete, elegida para su transacción particular. No cubre la lista de sugerencias, búsquedas de puntos de interés (POI), otros contenidos ni la construcción de un directorio permanente de empresas. No guardar nombres de comercios, coordenadas o respuestas completas. Para perfiles empresariales duraderos, definir la conservación de información aportada por la propia empresa y el tratamiento del place ID; no asumir que toda dirección obtenida de Places tiene permiso de almacenamiento indefinido. La activación sigue pendiente, incluida la revisión de solicitudes, correo, WhatsApp y fichas descargadas frente a los [términos específicos](https://cloud.google.com/maps-platform/terms/maps-service-terms). Mientras tanto se admite la ubicación escrita por el usuario.
+La [excepción «Autocomplete for end user addresses»](https://developers.google.com/maps/documentation/javascript/policies#autocomplete-for-end-user-addresses) alcanza únicamente la dirección postal seleccionada que el usuario habría proporcionado completa y correctamente sin Autocomplete, y solo para su transacción concreta. No alcanza la lista de sugerencias ni otros contenidos; tampoco las funciones de búsqueda de POI o direcciones de otros servicios. No existe una autorización general para conservar toda respuesta de Places. Los [términos específicos, B.14.3](https://cloud.google.com/maps-platform/terms/maps-service-terms) permiten treinta días para coordenadas de Places; esa regla no autoriza treinta días de almacenamiento de cualquier campo ni debe confundirse con las condiciones de Address Validation o Geocoding, que esta integración no usa.
+
+### Aplicación a MoveFlow y pendientes concretos
+
+- **Ficha de mudanza:** nuestra interpretación es que la excepción puede cubrir origen y destinos aportados como direcciones del usuario para esa mudanza. Verificar los requisitos anteriores antes de conservarlos o incluirlos en WhatsApp y fichas descargadas. Elegir un restaurante por nombre no acredita que su dirección postal fuera conocida por el usuario. El adaptador actual acepta establecimientos y solo conserva `formattedAddress`: eliminar el nombre comercial no resuelve por sí mismo la procedencia del dato.
+- **Alta de una empresa:** el RPC valida la selección temporal y guarda únicamente `businessLocationPlace.placeId` con `businessLocationSource: 'google'`; elimina del contenido persistido tanto `businessLocation` como `label`. Sin selección de Google, conserva el texto aportado manualmente en `businessLocation` y marca `businessLocationSource: 'user'`. La fuente la establece el servidor. No se añade ningún campo al formulario. El operador podrá abrir Google Maps mediante el identificador; la dirección de Google no se convierte en domicilio permanente del perfil. Ver [altas-en-plataforma.md](./altas-en-plataforma.md).
+- **Perfiles y catálogo público:** solicitar revisión del uso propuesto antes de incorporar contenido de Google a un directorio o publicidad. La sección 3.2.3 de los [términos generales](https://cloud.google.com/maps-platform/terms) restringe extracción, caché y utilización en servicios de directorio/publicidad. Conservar un `placeId` no elimina las demás restricciones del producto.
+
+La reducción de datos del alta está implementada; no constituye una certificación contractual de usos futuros. Antes de publicar perfiles, mantener la información aportada independientemente por la empresa separada del contenido de Google y revisar el uso de directorio. `accepting_provider_applications` sigue en `false` por los pendientes de conexión, identidad legal y operación de altas. La activación técnica de la clave no activa Supabase ni concede permiso general para almacenar o redistribuir contenido de Google.
+
+Los [términos de Google, sección 3.2.2(a)](https://cloud.google.com/maps-platform/terms), requieren avisar que la aplicación incorpora Google Maps y vincular sus términos para usuarios finales y su política de privacidad. `terminos.html` contiene ambos enlaces; `privacidad.html` explica el envío de búsquedas y enlaza la política de Google. Mantener estos avisos públicamente accesibles y la atribución visible. Esta revisión aplica al contrato general para facturación fuera del EEE; comprobar el contrato de la cuenta si cambia la región de facturación.
 
 Las pruebas automatizadas del adaptador y del control verifican carga diferida, sesiones, campos solicitados, teclado, selección táctil, cambios durante respuestas pendientes, limpieza y errores usando dobles de prueba. **No prueban una cuenta real de Google, cuotas, facturación ni entrega de resultados en producción.** Fuentes revisadas el 30 de octubre de 2026.

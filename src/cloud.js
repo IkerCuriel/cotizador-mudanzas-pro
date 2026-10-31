@@ -136,9 +136,19 @@ export function safeReturnUrl(value, baseHref = globalThis.location?.href || 'ht
   let target;
   try { target = new URL(value, base); } catch { return fallback; }
   if (target.origin !== base.origin || target.username || target.password) return fallback;
-  const allowed = ['index.html', 'cuenta.html', 'panel.html'].map((page) => new URL(page, base).pathname);
+  const allowed = ['index.html', 'cuenta.html', 'panel.html', 'mudanceros.html', 'pago.html'].map((page) => new URL(page, base).pathname);
   if (!allowed.includes(target.pathname)) return fallback;
+  const originalParams = new URLSearchParams(target.search);
   target.search = '';
+  if (target.pathname === new URL('pago.html', base).pathname) {
+    const purchase = originalParams.getAll('purchase');
+    if (purchase.length === 1 && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(purchase[0])) target.searchParams.set('purchase', purchase[0]);
+    if (originalParams.getAll('cancelled').length === 1 && originalParams.get('cancelled') === '1') target.searchParams.set('cancelled', '1');
+  }
+  if (['pago.html', 'mudanceros.html'].some((page) => target.pathname === new URL(page, base).pathname)) {
+    const plans = originalParams.getAll('plan');
+    if (plans.length === 1 && ['monthly_149', 'annual_1440'].includes(plans[0])) target.searchParams.set('plan', plans[0]);
+  }
   if (!/^#[A-Za-z0-9_-]*$/.test(target.hash)) target.hash = '';
   return target.href;
 }

@@ -1,15 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PROVIDER_PLANS, PROVIDER_INBOX, prepareProviderInterest, validateProviderInterest } from '../src/provider-interest.js';
+import { PROVIDER_PLANS, prepareProviderInterest, validateProviderInterest } from '../src/provider-interest.js';
 const complete = { company: 'Mudanzas de Prueba', contact: 'Persona de prueba', email: 'ejemplo@example.com', phone: '+52 55 0000 0000', businessLocation: 'Del Valle, Ciudad de México', coverage: 'CDMX y Puebla', services: 'both', plan: 'monthly_149', notes: 'Equipo y dos unidades.', consent: true };
 
-test('monthly inquiry opens only the owner inbox, includes a map reference and never claims payment', () => {
+test('monthly application prepares normalized data and map reference without opening email or claiming payment', () => {
   const prepared = prepareProviderInterest(complete);
-  const url = new URL(prepared.href);
-  assert.equal(url.protocol, 'mailto:'); assert.equal(url.pathname, PROVIDER_INBOX);
-  assert.equal(url.searchParams.get('body'), prepared.body);
-  assert.equal(url.searchParams.get('subject'), prepared.subject);
-  assert.deepEqual([...url.searchParams.keys()], ['subject', 'body']);
+  assert.equal(prepared.href, undefined);
+  assert.equal(prepared.values.company, complete.company);
   for (const value of [complete.company, complete.contact, complete.email, complete.phone, complete.businessLocation, complete.coverage, complete.notes, '$149 MXN al mes']) assert.ok(prepared.body.includes(value));
   assert.match(prepared.body, /no autoriza un cargo ni crea automáticamente una cuenta/);
   assert.match(prepared.body, /Google Maps \(referencia por revisar\)/);
@@ -57,15 +54,15 @@ test('a selected place stays linked only while its label matches the business lo
   }
 });
 
-test('untrusted contact data cannot add mail recipients or headers, alter plan pricing or inject a subject', () => {
+test('untrusted provider data cannot add recipients, authority fields or alter plan pricing', () => {
   const prepared = prepareProviderInterest({ ...complete, company: 'Acme\r\nBcc: otro@example.com', businessLocation: 'https://evil.invalid/?bcc=intruso@example.com', notes: '&bcc=intruso@example.com # prueba + acentos ñ', price: 1, recipient: 'otro@example.com', subject: 'inventado' });
-  const url = new URL(prepared.href);
-  assert.equal(url.pathname, PROVIDER_INBOX);
-  assert.equal(url.searchParams.has('bcc'), false);
-  assert.ok(!prepared.subject.includes('inventado'));
+  assert.equal(prepared.href, undefined);
+  assert.equal(prepared.values.recipient, undefined);
+  assert.equal(prepared.values.price, undefined);
+  assert.equal(prepared.values.subject, undefined);
   assert.match(prepared.body, /\$149 MXN/);
   assert.ok(prepared.body.includes('Acme  Bcc: otro@example.com'));
-  assert.ok(url.searchParams.get('body').includes('&bcc=intruso@example.com # prueba + acentos ñ'));
+  assert.ok(prepared.body.includes('&bcc=intruso@example.com # prueba + acentos ñ'));
   const map = prepared.body.split('\n').find(line => line.startsWith('Google Maps')).split(': ').slice(1).join(': ');
   assert.equal(new URL(map).hostname, 'www.google.com');
 });
