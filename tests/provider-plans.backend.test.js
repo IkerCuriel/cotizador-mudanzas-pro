@@ -36,8 +36,8 @@ await test('planes: cortesía privada por integrante sin cobros ni ampliación d
   const enableTeam=async()=>{await as('owner');await grant('tere');await grant('marco');};
   const register=async(who,suffix=who)=>{await as(who);return db.query('select public.register_push_device($1,$2,$3,$4,$5)',['https://fcm.googleapis.com/send/plan-'+suffix,'B'+'a'.repeat(86),'b'.repeat(22),'Prueba',ids[who]]);};
   try{
-    await check('catálogo149 cerrado, sin derechos por correo ni metadata; tablas y administración privadas',async()=>{
-      assert.deepEqual((await db.query('select code,amount_minor,currency,billing_interval,checkout_enabled from private.subscription_plans')).rows,[{code:'monthly_149',amount_minor:14900,currency:'MXN',billing_interval:'month',checkout_enabled:false}]);
+    await check('catálogo cerrado, sin derechos por correo ni metadata; tablas y administración privadas',async()=>{
+      assert.deepEqual((await db.query('select code,amount_minor,currency,billing_interval,checkout_enabled from private.subscription_plans order by code')).rows,[{code:'annual_1440',amount_minor:144000,currency:'MXN',billing_interval:'year',checkout_enabled:false},{code:'monthly_149',amount_minor:14900,currency:'MXN',billing_interval:'month',checkout_enabled:false}]);
       assert.equal((await db.query('select count(*)::int n from private.provider_complimentary_access')).rows[0].n,0);
       await as(null);await denied(access,/permission denied/);
       await as('unverified');await denied(access,/Verifica tu correo/);

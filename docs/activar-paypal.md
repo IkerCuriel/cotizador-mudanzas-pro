@@ -4,7 +4,7 @@ Fecha de revisión: 30 de octubre de 2026.
 
 ## Estado real de esta versión
 
-MoveFlow anuncia un plan de **$149 MXN al mes** y permite preparar una solicitud de alta por correo para `iker.san.cu@gmail.com`. La persona interesada confirma el envío desde su programa de correo. No se ha creado una cuenta PayPal Business, no se han configurado credenciales de pago y no existe un cobro activo ni una activación automática de perfiles. El correo de administración no se ha registrado como destinatario de pagos.
+MoveFlow anuncia un plan de **$149 MXN al mes** y otro de **$1,440 MXN por 12 meses en un solo pago** (equivalente a $120 al mes) y permite preparar una solicitud de alta por correo para `iker.san.cu@gmail.com`. La persona interesada confirma el envío desde su programa de correo. No se ha creado una cuenta PayPal Business, no se han configurado credenciales de pago y no existe un cobro activo ni una activación automática de perfiles. El correo de administración no se ha registrado como destinatario de pagos.
 
 Este documento describe trabajo pendiente. La base preparada en el proyecto no sustituye la conexión de Supabase, las invitaciones de acceso, la operación de soporte ni una integración de pagos probada. Consultar también [planes y cobros](planes-y-cobros.md), [seguridad y cuentas](seguridad-y-cuentas.md) y [lanzamiento](lanzamiento.md).
 
@@ -19,7 +19,7 @@ No pegues contraseñas, CLABE, documentos de verificación, códigos MFA ni secr
 
 ## 2. Confirmar el producto que se venderá
 
-El plan solicitado es una suscripción **recurrente mensual de $149.00 MXN**, no una venta a meses sin intereses. El importe anunciado al público debe ser el total que pagará el negocio; antes de activar pagos, confirmar con contabilidad el desglose de impuestos y la facturación, sin añadir cargos inesperados al precio mostrado.
+Los planes previstos son **mensual de $149.00 MXN** y **anual de $1,440.00 MXN en un solo pago por 12 meses**. El anual equivale a $120 al mes; no son doce cargos mensuales de $120 ni una venta a meses sin intereses. El ahorro anual es de $348 respecto de 12 mensualidades de $149 ($1,788). Si se habilita renovación automática, debe configurarse y aceptarse para el periodo correspondiente (mensual o anual). El importe anunciado al público debe ser el total que pagará el negocio; antes de activar pagos, confirmar con contabilidad el desglose de impuestos y la facturación, sin añadir cargos inesperados al precio mostrado.
 
 La aprobación del negocio, las funciones disponibles y los límites deben estar claros antes de pedir dinero. Completar los datos legales del operador, condiciones de uso, privacidad, contacto de soporte, cancelación y reembolso. No vender como disponible el panel o las notificaciones mientras su recepción real no esté conectada y probada. No prometer un número de clientes o ingresos. Preparar también el aviso previo de renovación automática con al menos cinco días naturales y un mecanismo accesible de cancelación, conforme al alcance de la LFPC. Estos controles deben operar, no solo aparecer en los términos. [Orientación oficial de Profeco sobre suscripciones](https://www.gob.mx/profeco/prensa/que-las-suscripciones-digitales-no-afecten-tu-presupuesto-profeco-te-orienta?idiom=es-MX).
 
@@ -38,9 +38,9 @@ Estas son decisiones de arquitectura propuestas para la siguiente fase; la versi
 
 ## 4. Integración técnica pendiente
 
-Crear una aplicación **Sandbox** en PayPal Developer, con comprador y vendedor de pruebas, y un producto y plan mensual en MXN. Mantener separadas las credenciales, identificadores de plan y datos de Sandbox y producción. Para producción se necesitan otros identificadores: no basta con cambiar una bandera del navegador. El SDK requiere un servidor que cree la suscripción y verifique su estado antes de activar el servicio. [Integrar Subscriptions](https://developer.paypal.com/docs/subscriptions/integrate/).
+Crear una aplicación **Sandbox** en PayPal Developer, con comprador y vendedor de pruebas, y un producto con dos planes separados en MXN: mensual de 149 y anual de 1,440. El anual tendrá intervalo de un año y cobro completo por periodo, nunca un cobro mensual de 120. Mantener separadas las credenciales, identificadores de plan y datos de Sandbox y producción. Para producción se necesitan otros identificadores: no basta con cambiar una bandera del navegador. El SDK requiere un servidor que cree la suscripción y verifique su estado antes de activar el servicio. [Integrar Subscriptions](https://developer.paypal.com/docs/subscriptions/integrate/).
 
-El backend deberá comprobar usuario autenticado, negocio autorizado, cuenta receptora esperada, moneda, importe, plan permitido y vínculo interno con la suscripción. No aceptar precio, vigencia, rol, cortesía o identificador de negocio enviados por el navegador como autoridad. La página de retorno, un parámetro `success`, el evento de aprobación del navegador o una captura de pago no prueban por sí solos el derecho de acceso.
+El backend deberá comprobar usuario autenticado, negocio autorizado, cuenta receptora esperada, moneda, importe, periodo mensual/anual, plan permitido y vínculo interno con la suscripción. No aceptar precio, vigencia, rol, cortesía o identificador de negocio enviados por el navegador como autoridad. La página de retorno, un parámetro `success`, el evento de aprobación del navegador o una captura de pago no prueban por sí solos el derecho de acceso.
 
 Configurar un receptor HTTPS de notificaciones de PayPal y verificar cada mensaje según su documentación. Guardar identificadores únicos para procesar reintentos una sola vez, consultar el estado vigente cuando lleguen eventos fuera de orden y reconciliar operaciones que no hayan llegado. PayPal puede reintentar entregas fallidas; el sistema no debe duplicar cuentas, cobros, recibos ni meses de acceso. El simulador no sustituye los eventos de una transacción Sandbox real. [Verificación y pruebas de webhooks](https://developer.paypal.com/api/rest/webhooks/rest/).
 
@@ -49,7 +49,7 @@ No registrar secretos, cabeceras completas de autenticación, mensajes íntegros
 ## 5. Pruebas antes del primer cobro real
 
 - Registro, correo verificado, invitación y segundo factor del operador; rechazo de una cuenta sin permisos.
-- Suscripción correcta de 149 MXN; rechazo de otro plan, importe, moneda, receptor o negocio.
+- Suscripción mensual correcta de 149 MXN y anual de 1,440 MXN por 12 meses; rechazo de códigos desconocidos, precio manipulado, moneda, periodo, receptor o negocio incorrectos. No aceptar 120 como cargo del anual ni otorgar un año por un pago mensual.
 - Aprobación cancelada, pago pendiente o fallido, doble clic, red interrumpida y reintento sin duplicar efectos.
 - Renovación, notificación duplicada o fuera de orden, firma inválida y reconciliación de notificaciones ausentes.
 - Cancelación accesible y confirmada, fecha efectiva de fin de acceso, reembolso y disputa; sin reactivar un negocio suspendido.

@@ -7,6 +7,7 @@ import { LEGAL_READY } from "./legal-config.js";
 import { setupLocationMaps } from "./maps.js";
 import { createSubmissionLifecycle, clearStoredDraft } from "./submission-lifecycle.js";
 import { setupFreshVisit } from "./fresh-visit.js";
+import "./inventory-quick.css";
 
 const form = document.getElementById("movingQuoteForm");
 const modal = document.getElementById("quoteModal");
@@ -119,8 +120,10 @@ function renderInventory() {
     return `<article class="inventory-item" data-group-id="${group.id}">
       <span class="inventory-item__icon" aria-hidden="true">${group.icon}</span>
       <div class="inventory-item__meta"><strong>${group.name}</strong>
-        <label class="variant-selector"><span class="sr-only">Tipo de ${group.name}</span><select data-variant-group="${group.id}" aria-label="Tipo de ${group.name}">${group.variants.map((item) => `<option value="${item.id}"${item.id === variant.id ? " selected" : ""}>${item.name}</option>`).join("")}</select></label>
+        ${group.variants.length > 1 ? `<label class="variant-selector"><span>Elige el tipo</span><select data-variant-group="${group.id}" aria-label="Tipo de ${group.name}">${group.variants.map((item) => `<option value="${item.id}"${item.id === variant.id ? " selected" : ""}>${item.name}</option>`).join("")}</select></label>` : ""}
+        ${group.description ? `<small>${group.description}</small>` : ""}
         ${variant.special ? '<small>Requiere revisión del equipo</small>' : ""}
+        <small class="inventory-group-count" data-group-count="${group.id}" hidden></small>
       </div>
       <div class="quantity-control" aria-label="Cantidad de ${variant.name}">
         <button type="button" data-quantity-action="decrease" data-item-id="${variant.id}" aria-label="Disminuir ${variant.name}">−</button>
@@ -138,11 +141,16 @@ function updateInventoryUI() {
   });
   document.querySelectorAll("[data-group-id]").forEach((card) => {
     const group = FURNITURE.find((entry) => entry.id === card.dataset.groupId);
-    card.classList.toggle("has-quantity", group.variants.some((item) => state.inventory[item.id] > 0));
+    const count = group.variants.reduce((sum, item) => sum + (state.inventory[item.id] || 0), 0);
+    card.classList.toggle("has-quantity", count > 0);
+    const groupCount = card.querySelector("[data-group-count]");
+    groupCount.hidden = !count || group.variants.length === 1;
+    groupCount.textContent = `${count} ${count === 1 ? "agregado" : "agregados"} en este grupo`;
   });
   const selected = ITEMS.filter((item) => state.inventory[item.id] > 0);
   const count = selected.reduce((sum, item) => sum + state.inventory[item.id], 0);
-  text("itemCountLabel", `${count} ${count === 1 ? "artículo seleccionado" : "artículos seleccionados"}`);
+  text("itemCountLabel", count ? `${count} ${count === 1 ? "artículo en tu mudanza" : "artículos en tu mudanza"}` : valueOf("customItems").trim() ? "Inventario descrito en tus notas" : "Agrega tus muebles con el botón +");
+  document.getElementById("clearInventory").disabled = count === 0;
   document.getElementById("selectedInventory").innerHTML = selected.length ? selected.map((item) => `<div class="selected-inventory-row"><span><strong>${state.inventory[item.id]} ×</strong> ${item.name}${item.special ? ' <small>Especial</small>' : ""}</span><button type="button" class="text-button" data-remove-item="${item.id}" aria-label="Quitar todos: ${item.name}">Quitar</button></div>`).join("") : '<p class="empty-state">Tus muebles aparecerán aquí. Puedes agregar distintos tamaños del mismo tipo.</p>';
   if (count || valueOf("customItems").trim()) text("inventoryError", "");
 }
@@ -164,8 +172,6 @@ function servicesText(fields) {
   else if (fields.hoistService === "unknown") services.push("Volados por confirmar");
   services.push(`Traspaleo: ${answerLabels[fields.shuttleService] || "Por confirmar"}`);
   if (Number(fields.assemblyCount)) services.push(`Desmontaje / montaje: ${fields.assemblyCount} muebles`);
-  if (Number(fields.storageDays)) services.push(`Bodega: ${fields.storageDays} días`);
-  if (Number(fields.extraLoaders)) services.push(`${fields.extraLoaders} cargadores adicionales solicitados`);
   return services.join(" · ");
 }
 function summaryEntries(request) {
@@ -457,7 +463,6 @@ form.addEventListener("click", (event) => {
   if (roomAction) {
     const id = roomAction.dataset.roomId; const delta = roomAction.dataset.roomAction === "increase" ? 1 : -1;
     state.rooms[id] = Math.max(0, Math.min(20, (state.rooms[id] || 0) + delta));
-    if (delta > 0) { state.activeRoom = id; renderInventory(); }
     updateRoomUI(); refresh(); return;
   }
   const quantity = event.target.closest("[data-quantity-action]");
@@ -470,6 +475,7 @@ form.addEventListener("click", (event) => {
 });
 form.addEventListener("input", (event) => {
   if (event.target.id === "inventorySearch") { renderInventory(); return; }
+  if (event.target.id === "customItems") updateInventoryUI();
   setError(event.target); refresh();
 });
 form.addEventListener("change", (event) => {

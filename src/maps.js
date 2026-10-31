@@ -23,6 +23,148 @@ export function mapLinks(value, { placeId, apiKey = '' } = {}) {
   return { query, searchUrl: search.href, embedUrl: embed.href, error: '' };
 }
 
+// Shared by the route form and the provider signup. No route-specific elements are required.
+function createLocationMapControl(root, { input, card, title, enabled, apiKey, places }) {
+  const button = card.querySelector('[data-map-preview]');
+  const link = card.querySelector('[data-map-link]');
+  const status = card.querySelector('[data-map-status]');
+  const host = card.querySelector('[data-map-frame]');
+  const searchField = input.closest('.location-search');
+  const dropdown = root.createElement('div'); dropdown.className = 'place-results'; dropdown.hidden = true;
+  const options = root.createElement('div'); options.id = `${input.id}-suggestions`; options.setAttribute('role', 'listbox'); options.setAttribute('aria-label', 'Ubicaciones sugeridas');
+  const attribution = root.createElement('div'); attribution.className = 'place-results__attribution'; attribution.textContent = 'Google Maps'; attribution.setAttribute('translate', 'no');
+  dropdown.append(options, attribution); searchField.append(dropdown);
+  input.setAttribute('autocomplete', 'off');
+  if (places.available) {
+    input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-controls', options.id); input.setAttribute('aria-expanded', 'false');
+  }
+  let selection, activated = false, revision = 0, timer, sessionPromise, activeOption = -1, suggestions = [], committing = false, disposed = false;
+  let lastValue = input.value;
+  let frameUrl = '';
+  const listeners = [];
+  function listen(target, type, callback) { target.addEventListener(type, callback); listeners.push(() => target.removeEventListener(type, callback)); }
+  function closeSuggestions() {
+    dropdown.hidden = true; options.replaceChildren(); suggestions = []; activeOption = -1;
+    input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant');
+  }
+  function endSession() {
+    const ending = sessionPromise; sessionPromise = null;
+    ending?.then((token) => places.endSession?.(token)).catch(() => {});
+  }
+  function clearFrame() { frameUrl = ''; host.replaceChildren(); host.hidden = true; button.setAttribute('aria-expanded', 'false'); }
+  function linksForInput() { return mapLinks(input.value, { apiKey, placeId: normalizeLocationSelection(selection, input.value.trim())?.placeId }); }
+  function update() {
+    if (lastValue !== input.value) {
+      lastValue = input.value;
+      selection = normalizeLocationSelection(selection, input.value.trim());
+      clearFrame();
+    }
+    const links = linksForInput();
+    link.hidden = Boolean(links.error);
+    if (links.error) link.removeAttribute('href'); else link.href = links.searchUrl;
+    button.disabled = Boolean(links.error) || !enabled();
+    button.textContent = activated ? 'Actualizar mapa' : 'Ver mapa';
+    if (!activated) status.textContent = enabled() ? 'El mapa aparecerá al entrar al campo de ubicación.' : 'Mapas desactivados. Tu ubicación se conserva en el formulario.';
+  }
+  function showMap() {
+    if (disposed || !enabled()) return;
+    activated = true; update();
+    const links = input.value.trim() ? linksForInput() : mapLinks('México');
+    if (links.error) { clearFrame(); status.textContent = links.error; return; }
+    if (frameUrl !== links.embedUrl) {
+      const iframe = root.createElement('iframe'); iframe.title = `Mapa: ${title()}`; iframe.referrerPolicy = 'origin'; iframe.allowFullscreen = true; iframe.src = links.embedUrl;
+      host.replaceChildren(iframe); host.hidden = false; frameUrl = links.embedUrl;
+      iframe.addEventListener('error', () => { if (iframe.isConnected) status.textContent = 'Puedes revisar esta ubicación con «Abrir en Google Maps».'; });
+    }
+    button.setAttribute('aria-expanded', 'true');
+    status.textContent = selection ? 'Ubicación seleccionada. Comprueba que sea el lugar correcto.' : input.value.trim() ? 'Vista orientativa: comprueba que el mapa corresponda a tu dirección.' : 'Escribe una dirección para acercar el mapa a tu ubicación.';
+  }
+  async function choose(index) {
+    const item = suggestions[index]; if (!item) return;
+    const current = ++revision; clearTimeout(timer); closeSuggestions(); status.textContent = 'Consultando la ubicación…';
+    const selectedSession = sessionPromise; sessionPromise = null;
+    try {
+      const chosen = await places.select(item.prediction);
+      // Editing/removing the field while Google responds invalidates this selection.
+      if (disposed || current !== revision) return;
+      input.value = chosen.label; selection = normalizeLocationSelection(chosen, chosen.label); lastValue = input.value;
+      clearFrame(); showMap();
+      committing = true; input.dispatchEvent(new root.defaultView.Event('input', { bubbles: true })); committing = false;
+    } catch {
+      if (current === revision && !disposed) status.textContent = 'No pudimos seleccionar esa ubicación. Escribe la dirección o intenta buscar de nuevo.';
+    } finally { selectedSession?.then((token) => places.endSession?.(token)).catch(() => {}); }
+  }
+  function highlight(index) {
+    activeOption = index;
+    [...options.children].forEach((option, position) => option.setAttribute('aria-selected', String(position === index)));
+    const option = options.children[index]; if (option) { input.setAttribute('aria-activedescendant', option.id); option.scrollIntoView({ block: 'nearest' }); }
+  }
+  async function search(current, query) {
+    if (!enabled() || !places.available || query.length < 3 || query.length > 200 || selection) return;
+    try {
+      sessionPromise ??= places.createSession();
+      const token = await sessionPromise;
+      if (current !== revision || disposed || root.activeElement !== input) return;
+      const results = await places.fetchSuggestions(query, token);
+      if (current !== revision || disposed || input.value.trim() !== query || root.activeElement !== input) return;
+      closeSuggestions(); suggestions = results.slice(0, 5);
+      suggestions.forEach((item, index) => {
+        const option = root.createElement('div'); option.className = 'place-results__option'; option.id = `${input.id}-option-${index}`; option.setAttribute('role', 'option'); option.setAttribute('aria-selected', 'false'); option.textContent = item.label;
+        // Keep the input focused until click on both touch screens and desktop.
+        // Otherwise blur closes the list before a touch can choose its result.
+        option.addEventListener('pointerdown', (e) => { if (e.button === 0) e.preventDefault(); });
+        option.addEventListener('mousedown', (e) => e.preventDefault());
+        option.addEventListener('click', () => choose(index)); options.append(option);
+      });
+      dropdown.hidden = !suggestions.length; input.setAttribute('aria-expanded', String(Boolean(suggestions.length)));
+      status.textContent = suggestions.length ? 'Selecciona una ubicación de la lista o completa tu dirección.' : 'No encontramos sugerencias. Puedes escribir la dirección y revisarla en el mapa.';
+    } catch {
+      if (current === revision && !disposed) { closeSuggestions(); endSession(); status.textContent = 'Las sugerencias no están disponibles ahora. Puedes escribir tu dirección y revisar el mapa.'; }
+    }
+  }
+  function schedule() {
+    const current = ++revision; clearTimeout(timer); closeSuggestions();
+    const query = input.value.trim();
+    timer = setTimeout(() => { if (activated) showMap(); search(current, query); }, places.available ? 350 : 700);
+  }
+  listen(input, 'focus', () => { showMap(); if (places.available) { const current = ++revision; search(current, input.value.trim()); } });
+  listen(input, 'input', () => { if (committing) return; selection = undefined; update(); if (enabled()) status.textContent = places.available ? 'Buscando ubicaciones…' : 'La vista del mapa se actualizará mientras escribes.'; schedule(); });
+  listen(input, 'blur', closeSuggestions);
+  listen(input, 'keydown', (e) => {
+    if (e.key === 'Escape') { revision++; clearTimeout(timer); closeSuggestions(); endSession(); return; }
+    if (!suggestions.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); highlight(activeOption === -1 ? (e.key === 'ArrowDown' ? 0 : suggestions.length - 1) : (activeOption + (e.key === 'ArrowDown' ? 1 : -1) + suggestions.length) % suggestions.length); }
+    if (e.key === 'Enter' && activeOption >= 0) { e.preventDefault(); choose(activeOption); }
+  });
+  listen(button, 'click', showMap);
+  update();
+  return {
+    update,
+    selection: () => normalizeLocationSelection(selection, input.value.trim()),
+    restore(value) { selection = normalizeLocationSelection(value, input.value.trim()); lastValue = input.value; update(); },
+    reset() { revision++; clearTimeout(timer); activated = false; selection = undefined; endSession(); closeSuggestions(); clearFrame(); update(); },
+    pause() { revision++; clearTimeout(timer); activated = false; endSession(); closeSuggestions(); clearFrame(); update(); },
+    dispose() { disposed = true; listeners.splice(0).forEach((remove) => remove()); revision++; clearTimeout(timer); endSession(); closeSuggestions(); clearFrame(); dropdown.remove(); },
+  };
+}
+
+/** A single business location, with the same search and preview as customer route fields. */
+export function setupBusinessLocationMap(root = document, { apiKey = configuredKey, places = createGooglePlacesClient({ apiKey }) } = {}) {
+  const input = root.getElementById('businessLocation');
+  const card = root.querySelector('[data-location-map="businessLocation"]');
+  if (!input || !card) throw new Error('Falta el campo de ubicación de la empresa.');
+  const preference = root.getElementById('businessMapsEnabled');
+  const control = createLocationMapControl(root, { input, card, title: () => 'ubicación de la empresa', enabled: () => preference?.checked !== false, apiKey, places });
+  const changedPreference = () => control.pause();
+  preference?.addEventListener('change', changedPreference);
+  return {
+    update: () => control.update(),
+    collect() { const place = control.selection(); return place ? { businessLocationPlace: place } : {}; },
+    reset: () => control.reset(),
+    dispose() { preference?.removeEventListener('change', changedPreference); control.dispose(); },
+  };
+}
+
 export function setupLocationMaps(root = document, { apiKey = configuredKey, places = createGooglePlacesClient({ apiKey }) } = {}) {
   const controls = new Map();
   const rows = [];
@@ -31,128 +173,11 @@ export function setupLocationMaps(root = document, { apiKey = configuredKey, pla
   const addButton = root.getElementById('addDestination');
   const preference = root.getElementById('mapsEnabled');
   const enabled = () => preference?.checked !== false;
-  const event = () => new root.defaultView.Event('input', { bubbles: true });
 
-  function attach(input, card, title) {
-    const button = card.querySelector('[data-map-preview]');
-    const link = card.querySelector('[data-map-link]');
-    const status = card.querySelector('[data-map-status]');
-    const host = card.querySelector('[data-map-frame]');
-    const searchField = input.closest('.location-search');
-    const dropdown = root.createElement('div'); dropdown.className = 'place-results'; dropdown.hidden = true;
-    const options = root.createElement('div'); options.id = `${input.id}-suggestions`; options.setAttribute('role', 'listbox'); options.setAttribute('aria-label', 'Ubicaciones sugeridas');
-    const attribution = root.createElement('div'); attribution.className = 'place-results__attribution'; attribution.textContent = 'Google Maps'; attribution.setAttribute('translate', 'no');
-    dropdown.append(options, attribution); searchField.append(dropdown);
-    input.setAttribute('autocomplete', 'off');
-    if (places.available) {
-      input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-controls', options.id); input.setAttribute('aria-expanded', 'false');
-    }
-    let selection, activated = false, revision = 0, timer, sessionPromise, activeOption = -1, suggestions = [], committing = false, disposed = false;
-    let lastValue = input.value;
-    let frameUrl = '';
-    function closeSuggestions() {
-      dropdown.hidden = true; options.replaceChildren(); suggestions = []; activeOption = -1;
-      input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant');
-    }
-    function endSession() {
-      const ending = sessionPromise; sessionPromise = null;
-      ending?.then((token) => places.endSession?.(token)).catch(() => {});
-    }
-    function clearFrame() { frameUrl = ''; host.replaceChildren(); host.hidden = true; button.setAttribute('aria-expanded', 'false'); }
-    function linksForInput() { return mapLinks(input.value, { apiKey, placeId: normalizeLocationSelection(selection, input.value.trim())?.placeId }); }
-    function update() {
-      if (lastValue !== input.value) {
-        lastValue = input.value;
-        selection = normalizeLocationSelection(selection, input.value.trim());
-        clearFrame();
-      }
-      const links = linksForInput();
-      link.hidden = Boolean(links.error);
-      if (links.error) link.removeAttribute('href'); else link.href = links.searchUrl;
-      button.disabled = Boolean(links.error) || !enabled();
-      button.textContent = activated ? 'Actualizar mapa' : 'Ver mapa';
-      if (!activated) status.textContent = enabled() ? 'El mapa aparecerá al entrar al campo de ubicación.' : 'Mapas desactivados. Tu dirección se conserva en la ficha.';
-    }
-    function showMap() {
-      if (disposed || !enabled()) return;
-      activated = true; update();
-      const links = input.value.trim() ? linksForInput() : mapLinks('México');
-      if (links.error) { clearFrame(); status.textContent = links.error; return; }
-      if (frameUrl !== links.embedUrl) {
-        const iframe = root.createElement('iframe'); iframe.title = `Mapa: ${title()}`; iframe.referrerPolicy = 'origin'; iframe.allowFullscreen = true; iframe.src = links.embedUrl;
-        host.replaceChildren(iframe); host.hidden = false; frameUrl = links.embedUrl;
-        iframe.addEventListener('error', () => { if (iframe.isConnected) status.textContent = 'Puedes revisar esta ubicación con «Abrir en Google Maps».'; });
-      }
-      button.setAttribute('aria-expanded', 'true');
-      status.textContent = selection ? 'Ubicación seleccionada. Confirma el acceso exacto con tu asesor.' : input.value.trim() ? 'Vista orientativa: comprueba que el mapa corresponda a tu dirección.' : 'Escribe una dirección para acercar el mapa a tu ubicación.';
-    }
-    async function choose(index) {
-      const item = suggestions[index]; if (!item) return;
-      const current = ++revision; clearTimeout(timer); closeSuggestions(); status.textContent = 'Consultando la ubicación…';
-      const selectedSession = sessionPromise; sessionPromise = null;
-      try {
-        const chosen = await places.select(item.prediction);
-        // Editing/removing the field while Google responds invalidates this selection.
-        if (disposed || current !== revision) return;
-        input.value = chosen.label; selection = normalizeLocationSelection(chosen, chosen.label); lastValue = input.value;
-        clearFrame(); showMap();
-        committing = true; input.dispatchEvent(event()); committing = false;
-      } catch {
-        if (current === revision && !disposed) status.textContent = 'No pudimos seleccionar esa ubicación. Escribe la dirección o intenta buscar de nuevo.';
-      } finally { selectedSession?.then((token) => places.endSession?.(token)).catch(() => {}); }
-    }
-    function highlight(index) {
-      activeOption = index;
-      [...options.children].forEach((option, position) => option.setAttribute('aria-selected', String(position === index)));
-      const option = options.children[index]; if (option) { input.setAttribute('aria-activedescendant', option.id); option.scrollIntoView({ block: 'nearest' }); }
-    }
-    async function search(current, query) {
-      if (!enabled() || !places.available || query.length < 3 || query.length > 200 || selection) return;
-      try {
-        sessionPromise ??= places.createSession();
-        const token = await sessionPromise;
-        if (current !== revision || disposed || root.activeElement !== input) return;
-        const results = await places.fetchSuggestions(query, token);
-        if (current !== revision || disposed || input.value.trim() !== query || root.activeElement !== input) return;
-        closeSuggestions(); suggestions = results.slice(0, 5);
-        suggestions.forEach((item, index) => {
-          const option = root.createElement('div'); option.className = 'place-results__option'; option.id = `${input.id}-option-${index}`; option.setAttribute('role', 'option'); option.setAttribute('aria-selected', 'false'); option.textContent = item.label;
-          option.addEventListener('mousedown', (e) => e.preventDefault());
-          option.addEventListener('click', () => choose(index)); options.append(option);
-        });
-        dropdown.hidden = !suggestions.length; input.setAttribute('aria-expanded', String(Boolean(suggestions.length)));
-        status.textContent = suggestions.length ? 'Selecciona una ubicación de la lista o completa tu dirección.' : 'No encontramos sugerencias. Puedes escribir la dirección y revisarla en el mapa.';
-      } catch {
-        if (current === revision && !disposed) { closeSuggestions(); endSession(); status.textContent = 'Las sugerencias no están disponibles ahora. Puedes escribir tu dirección y revisar el mapa.'; }
-      }
-    }
-    function schedule() {
-      const current = ++revision; clearTimeout(timer); closeSuggestions();
-      const query = input.value.trim();
-      timer = setTimeout(() => { if (activated) showMap(); search(current, query); }, places.available ? 350 : 700);
-    }
-    input.addEventListener('focus', () => { showMap(); if (places.available) { const current = ++revision; search(current, input.value.trim()); } });
-    input.addEventListener('input', () => { if (committing) return; selection = undefined; update(); schedule(); });
-    input.addEventListener('blur', closeSuggestions);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { revision++; closeSuggestions(); return; }
-      if (!suggestions.length) return;
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); highlight(activeOption === -1 ? (e.key === 'ArrowDown' ? 0 : suggestions.length - 1) : (activeOption + (e.key === 'ArrowDown' ? 1 : -1) + suggestions.length) % suggestions.length); }
-      if (e.key === 'Enter' && activeOption >= 0) { e.preventDefault(); choose(activeOption); }
-    });
-    button.addEventListener('click', showMap);
-    update();
-    return {
-      update,
-      selection: () => normalizeLocationSelection(selection, input.value.trim()),
-      restore(value) { selection = normalizeLocationSelection(value, input.value.trim()); lastValue = input.value; update(); },
-      reset() { revision++; clearTimeout(timer); activated = false; selection = undefined; endSession(); closeSuggestions(); clearFrame(); update(); },
-      pause() { revision++; clearTimeout(timer); activated = false; endSession(); closeSuggestions(); clearFrame(); update(); },
-      dispose() { disposed = true; revision++; clearTimeout(timer); endSession(); closeSuggestions(); clearFrame(); dropdown.remove(); },
-    };
-  }
+  const attach = (input, card, title) => createLocationMapControl(root, { input, card, title, enabled, apiKey, places });
   for (const card of root.querySelectorAll('[data-location-map]')) {
     const side = card.dataset.locationMap;
+    if (!['origin', 'destination'].includes(side)) continue;
     controls.set(side, attach(root.getElementById(side), card, () => side === 'origin' ? 'origen' : 'primer destino'));
   }
   function changed() { root.getElementById('origin').dispatchEvent(new root.defaultView.Event('change', { bubbles: true })); }

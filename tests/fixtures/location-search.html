@@ -59,6 +59,17 @@
     <div id="additionalDestinations"></div>
     <button id="addDestination" type="button" class="button button--secondary">Añadir otro destino</button>
     <p id="routeStopsStatus" role="status" aria-live="polite"></p>
+    <h2>Ubicación de empresa (control independiente)</h2>
+    <label class="consent-field"><input id="businessMapsEnabled" type="checkbox" checked /><span>Mostrar mapa de la empresa</span></label>
+    <div class="location-search field">
+      <label for="businessLocation">Ubicación de la empresa</label>
+      <input id="businessLocation" name="businessLocation" type="text" maxlength="500" placeholder="Escribe una ubicación de prueba" />
+    </div>
+    <div class="location-map" data-location-map="businessLocation">
+      <div class="location-map__actions"><button type="button" class="button button--secondary" data-map-preview aria-expanded="false">Ver mapa</button><a data-map-link class="text-button" target="_blank" rel="noopener noreferrer" hidden>Abrir en Google Maps ↗</a></div>
+      <p class="location-map__status" data-map-status role="status" aria-live="polite"></p>
+      <div class="location-map__frame" data-map-frame hidden></div>
+    </div>
   </form>
   <h2>Datos recogidos por el formulario</h2>
   <pre id="fixturePayload" aria-live="polite"></pre>

@@ -56,6 +56,16 @@ await test('backend: autorización real, aislamiento y transacciones en PostgreS
     try { await fn(); } finally { await db.exec('rollback'); await root(); }
   });
   try {
+    await check('el inventario simplificado conserva sillas históricas y se acepta sin peso, volumen ni decisiones operativas', async () => {
+      const payload = normalizeDraft({ ...draft(), inventory: { 'chair-dining': 99, 'chair-folding': 99, 'chair-office': 2, 'armchair-single': 1, 'armchair-recliner': 1 } });
+      const { rows } = await db.query(`select private.validate_request_payload($1::jsonb,'family') as payload`, [JSON.stringify({ ...payload, totals: { totalWeight: 259, totalVolume: 6.55 } })]);
+      assert.deepEqual(rows[0].payload, payload);
+      assert.equal(rows[0].payload.inventory['chair-folding'], 99);
+      assert.equal(rows[0].payload.inventory['chair-dining'], 99);
+      assert.equal(rows[0].payload.totals, undefined);
+      assert.equal(rows[0].payload.fields.extraLoaders, undefined);
+      assert.equal(rows[0].payload.fields.storageDays, undefined);
+    });
     await check('metadata del registro no concede rol ni acceso',async()=>{
       await as('alice');
       const {rows} = await db.query(`select * from public.profiles`);

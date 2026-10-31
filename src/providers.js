@@ -1,20 +1,22 @@
 import { PROVIDER_INBOX, prepareProviderInterest, validateProviderInterest } from './provider-interest.js';
+import { setupBusinessLocationMap } from './maps.js';
 
 const form = document.getElementById('providerInterestForm');
 const review = document.getElementById('interestReview');
 const status = document.getElementById('interestStatus');
 const emailLink = document.getElementById('interestEmail');
+const locationMap = setupBusinessLocationMap(document);
 let prepared = null;
 
 function hideReview() { prepared = null; review.hidden = true; emailLink.removeAttribute('href'); status.textContent = ''; }
-function clearVisit() { form.reset(); hideReview(); form.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid')); document.querySelectorAll('[data-interest-error]').forEach(el => { el.textContent = ''; }); }
+function clearVisit() { form.reset(); locationMap.reset(); hideReview(); form.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid')); document.querySelectorAll('[data-interest-error]').forEach(el => { el.textContent = ''; }); }
 form.addEventListener('input', hideReview);
 form.addEventListener('change', hideReview);
 form.addEventListener('submit', event => {
   event.preventDefault();
-  const data = { ...Object.fromEntries(new FormData(form)), consent: form.elements.consent.checked };
+  const data = { ...Object.fromEntries(new FormData(form)), ...locationMap.collect(), consent: form.elements.consent.checked };
   const result = validateProviderInterest(data);
-  for (const key of ['company', 'contact', 'email', 'phone', 'coverage', 'services', 'notes', 'consent']) {
+  for (const key of ['company', 'contact', 'email', 'phone', 'businessLocation', 'coverage', 'services', 'plan', 'notes', 'consent']) {
     const error = result.errors[key] || '';
     form.elements[key].setAttribute('aria-invalid', String(Boolean(error)));
     document.querySelector(`[data-interest-error="${key}"]`).textContent = error;

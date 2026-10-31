@@ -88,8 +88,6 @@ export function normalizeDraft(data = {}) {
   fields.hoistDownFloors = fields.hoistService === "yes" ? integer(own(source, "hoistDownFloors"), 50) : 0;
   fields.shuttleService = choice(own(source, "shuttleService"), yesNo, "unknown");
   fields.assemblyCount = integer(own(source, "assemblyCount"), 99);
-  fields.storageDays = integer(own(source, "storageDays"), 365);
-  fields.extraLoaders = integer(own(source, "extraLoaders"), 20);
   for (const name of ["specialNotes", "customItems", "notes"]) fields[name] = text(own(source, name), 3000);
   fields.customerName = text(own(source, "customerName"), 100);
   fields.phone = text(own(source, "phone"), 40);
@@ -103,15 +101,12 @@ export function normalizeDraft(data = {}) {
 export function getInventoryTotals(rooms = {}, inventory = {}) {
   const normalizedRooms = countMap(rooms, ROOMS, 20);
   const normalizedInventory = countMap(inventory, ITEMS, 99);
-  const totals = ITEMS.reduce((sum, item) => {
+  return ITEMS.reduce((sum, item) => {
     const quantity = normalizedInventory[item.id];
     sum.totalItems += quantity;
-    sum.totalVolume += quantity * item.volume;
-    sum.totalWeight += quantity * item.weightKg;
     if (item.special) sum.specialItems += quantity;
     return sum;
-  }, { totalItems: 0, totalRooms: Object.values(normalizedRooms).reduce((sum, value) => sum + value, 0), totalVolume: 0, totalWeight: 0, specialItems: 0 });
-  return { ...totals, totalVolume: round(totals.totalVolume), totalWeight: round(totals.totalWeight) };
+  }, { totalItems: 0, totalRooms: Object.values(normalizedRooms).reduce((sum, value) => sum + value, 0), specialItems: 0 });
 }
 
 export function createRequest(data = {}, options = {}) {
@@ -195,8 +190,6 @@ export function buildRequestText(request) {
   lines.push("", `INVENTARIO (${totals.totalItems} artículos)`);
   const selectedItems = ITEMS.filter((item) => inventory[item.id] > 0);
   lines.push(...(selectedItems.length ? selectedItems.map((item) => `• ${inventory[item.id]} × ${item.name}${item.special ? " · MANEJO ESPECIAL" : ""}`) : ["Por confirmar"]));
-  lines.push(`Volumen y peso orientativos del inventario: ${numeric.format(totals.totalVolume)} m³ · ${numeric.format(totals.totalWeight)} kg.`,
-    "Estas medidas no incluyen artículos descritos solo en notas y requieren revisión de la empresa.");
   if (fields.customItems) lines.push(`Otros artículos: ${fields.customItems}`);
   if (fields.specialNotes) lines.push(`Indicaciones para muebles especiales: ${fields.specialNotes}`);
   lines.push("", "SERVICIOS A REVISAR", `Empaque: ${packingLabels[fields.packingType]}`);
@@ -205,9 +198,7 @@ export function buildRequestText(request) {
   lines.push(`Volados por fachada: ${yesNoLabels[fields.hoistService]}`);
   if (fields.hoistService === "yes") lines.push(`Volados: subida ${fields.hoistUpFloors} pisos; bajada ${fields.hoistDownFloors} pisos (maniobra y viabilidad por confirmar)`);
   lines.push(`Traspaleo solicitado: ${yesNoLabels[fields.shuttleService]} (la empresa confirma si es necesario)`);
-  lines.push(`Desmontaje / montaje: ${fields.assemblyCount ? `${fields.assemblyCount} muebles` : "No solicitado"}`,
-    `Almacenaje: ${fields.storageDays ? `${fields.storageDays} días` : "No solicitado"}`,
-    `Cargadores adicionales solicitados: ${fields.extraLoaders || "Ninguno"}`);
+  lines.push(`Desmontaje / montaje: ${fields.assemblyCount ? `${fields.assemblyCount} muebles` : "No solicitado"}`);
   if (fields.notes) lines.push(`Notas: ${fields.notes}`);
   lines.push("", "CONTACTO", `Nombre: ${fields.customerName || "Por confirmar"}`, `Teléfono: ${fields.phone || "Por confirmar"}`);
   if (fields.email) lines.push(`Correo: ${fields.email}`);

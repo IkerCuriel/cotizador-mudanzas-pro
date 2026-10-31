@@ -14,9 +14,11 @@ El formulario mantiene un origen, un primer destino y hasta cinco destinos adici
 
 El propietario confirmó que todavía no tiene proyecto de Google Cloud. No hay clave configurada ni sugerencias reales activadas en producción. No se muestran opciones inventadas como resultados de Google.
 
-La integración usa la API nueva de Places. Al activarla, cada campo muestra un desplegable con atribución Google Maps; puede seleccionarse con clic o flechas y Enter. La selección actualiza el texto y conserva el identificador del lugar. Las respuestas de consultas anteriores se descartan; una sesión pertenece a un solo campo. Se limita la consulta a cinco sugerencias y se espera una pausa de escritura. No hay consultas al teclear menos de tres caracteres.
+El alta de empresas utiliza el mismo control en «Ubicación de la empresa». Esta ubicación base se distingue de «Zonas de servicio», texto opcional para indicar otras áreas atendidas. No se guarda automáticamente un borrador de alta ni se envía una solicitud de perfil por abrir el mapa.
 
-Antes de activar: seguir [Google Places](google-places.md), configurar la cuenta, las restricciones y cuotas, verificar la política de contenido con la clave real y resolver las condiciones de conservación del contenido de Places. No se debe considerar que una dirección de Google pueda guardarse indefinidamente solo por copiarla al formulario. Las pruebas de la integración usan dobles de prueba; no prueban facturación ni resultados reales de Google.
+La integración usa la API nueva de Places. Al activarla, cada campo muestra un desplegable con atribución Google Maps; puede seleccionarse con toque, clic o flechas y Enter; Escape cierra y cancela las sugerencias pendientes. La selección actualiza el texto y conserva el identificador del lugar. Las respuestas de consultas anteriores se descartan; una sesión pertenece a un solo campo. Se limita la consulta a cinco sugerencias y se espera una pausa de escritura. No hay consultas al teclear menos de tres caracteres. No se restringen los resultados a domicilios: un nombre de comercio puede devolver coincidencias reales de Google. Al seleccionar, se muestran su dirección y su lugar en el mapa; no se almacena un catálogo de nombres comerciales.
+
+Antes de activar: seguir [Google Places](google-places.md), configurar la cuenta, las restricciones y cuotas, verificar la política de contenido con la clave real y resolver las condiciones de conservación del contenido de Places. La excepción para una dirección aportada por el usuario en su transacción no permite conservar indiscriminadamente resultados de puntos de interés ni construir un directorio permanente de empresas. Las pruebas de la integración usan dobles de prueba; no prueban facturación ni resultados reales de Google.
 
 ## Vista incrustada
 
@@ -33,3 +35,11 @@ Referencias oficiales revisadas el 30 de octubre de 2026: [Maps URLs](https://de
 Aplicar la migración `20261031001155_route_destinations.sql` después de 001–005 antes de activar la nube. `public_site_config` debe anunciar `route_destinations_version=1`; la página bloquea el envío a un servidor que no conserve los nuevos campos. La migración valida estructura, tamaños y tipos sin ampliar permisos. Las pruebas SQL usan PGlite; no se ha aplicado a una base remota.
 
 `originProperty=other` sigue requiriendo `originPropertyOther` de 1 a 120 caracteres. El texto se descarta al elegir una opción normal; destino conserva el catálogo anterior.
+
+## Control compartido y comprobaciones locales
+
+`setupLocationMaps(document)` mantiene el contrato del formulario de mudanza. `setupBusinessLocationMap(document)` usa el campo `businessLocation` y devuelve `update()`, `collect()`, `reset()` y `dispose()`. `collect()` añade `businessLocationPlace` solo cuando `{placeId,label}` coincide con el texto actual; una edición invalida esa selección. La integración no requiere elementos de origen, destinos ni paradas en la página de empresas.
+
+El campo va dentro de `.location-search`. Su tarjeta `[data-location-map="businessLocation"]` contiene los elementos `[data-map-preview]`, `[data-map-link]`, `[data-map-status]` y `[data-map-frame]`, como las tarjetas de la ruta. La preferencia opcional `businessMapsEnabled` permite desactivar la consulta externa. Después de `form.reset()` se llama a `reset()` para cancelar respuestas pendientes y vaciar referencias y mapas.
+
+`node --test tests/maps.test.js tests/maps-controls.test.js tests/google-places.test.js` comprueba el componente sin llamadas de red. Para revisar foco, toque, navegación y aspecto en un navegador local, abrir `/tests/fixtures/location-search.html` con el servidor de desarrollo. La página rotula claramente sus opciones simuladas, incluye los campos de ruta y empresa y permite demorar las respuestas para comprobar cambios de texto y Tab. No forma parte de la publicación. El mapa incrustado sí puede consultar Google si se activa; las sugerencias de esa página son exclusivamente datos de prueba.

@@ -4,19 +4,21 @@
 
 Proyecto de una plataforma que conecta a quien necesita mudarse con empresas de mudanzas. **No calcula un precio automático:** la empresa revisa la solicitud, contacta a la persona y acuerda con ella el precio y las condiciones.
 
-La primera operación se realiza con el negocio familiar **Mudanzas D’Curiel**. **MoveFlow es el nombre provisional de la plataforma.** El dominio propio, los datos legales del responsable y la apertura a más proveedores quedan pendientes.
+La primera operación se realiza con **Mudanzas D’Curiel**. **MoveFlow es el nombre provisional de la plataforma.** El dominio propio, los datos legales del responsable y la apertura a más proveedores quedan pendientes.
 
 ## Estado de esta entrega
 
-El piloto público se aloja en [MoveFlow Mudanzas](https://moveflow-mudanzas.render-inspace.chatgpt.site/), con un enlace que no incluye el nombre personal del propietario. La página presenta la atención como **Mudanzas D’Curiel**, sin tarjetas personales ni selector de asesor. El cliente prepara su ficha, la revisa en el modal y abre WhatsApp con el mensaje dirigido a la línea principal, atendida por Tere. **Debe pulsar Enviar en WhatsApp para entregarlo.** Los botones de contacto directo preparan un mensaje general cuando no se ha completado el formulario.
+El piloto público se aloja en [MoveFlow Mudanzas](https://moveflow-mudanzas.render-inspace.chatgpt.site/), con un enlace que no incluye el nombre personal del propietario. La página presenta la atención como **Mudanzas D’Curiel**, sin tarjetas personales ni selector de asesor. El cliente prepara su ficha, la revisa en el modal y abre WhatsApp con el mensaje dirigido a la línea principal de la empresa. **Debe pulsar Enviar en WhatsApp para entregarlo.** Los botones de contacto directo preparan un mensaje general cuando no se ha completado el formulario.
 
-**La base de datos, las cuentas y las notificaciones aún no están activadas en una nube de producción.** La recepción compartida en el panel requiere configurar Supabase y sus permisos. Preparar una ficha por sí solo no la entrega al negocio. No está integrada la API de WhatsApp ni se envía una copia automática a Marco. El contacto manual por WhatsApp no necesita una cuenta de MoveFlow ni Supabase.
+**La base de datos, las cuentas y las notificaciones aún no están activadas en una nube de producción.** La recepción compartida en el panel requiere configurar Supabase y sus permisos. Preparar una ficha por sí solo no la entrega al negocio. No está integrada la API de WhatsApp ni se envían copias automáticas a otros integrantes del equipo. El contacto manual por WhatsApp no necesita una cuenta de MoveFlow ni Supabase.
 
-El apartado [para mudanceros](https://moveflow-mudanzas.render-inspace.chatgpt.site/mudanceros.html) anuncia el plan de **$149 MXN al mes** y permite preparar una solicitud de alta por correo a iker.san.cu@gmail.com. El solicitante confirma el envío en su propia aplicación de correo; la página no confirma recepción ni crea una cuenta. **Los cobros siguen desactivados** hasta conectar y verificar PayPal Business y la base de datos. Quien solicita una mudanza no paga esta membresía. No se garantizan contrataciones, ingresos ni un número de solicitudes.
+El apartado [para mudanceros](https://moveflow-mudanzas.render-inspace.chatgpt.site/mudanceros.html) anuncia los planes de **$149 MXN al mes** y **$1,440 MXN en un pago por 12 meses** (equivalente a $120 al mes, ahorro de $348 frente a 12 mensualidades) y permite preparar una solicitud de alta por correo a iker.san.cu@gmail.com. El solicitante confirma el envío en su propia aplicación de correo; la página no confirma recepción ni crea una cuenta. **Los cobros siguen desactivados** hasta conectar y verificar PayPal Business y la base de datos. Quien solicita una mudanza no paga esta membresía. No se garantizan contrataciones, ingresos ni un número de solicitudes.
+
+El buscador de ubicaciones y el mapa se comparten entre la ruta del cliente y la ubicación base del negocio. Las sugerencias reales de Google requieren activar Maps y Places y configurar una clave restringida; mientras tanto se puede escribir y revisar la referencia en el mapa. Consulta [la guía de activación](docs/google-places.md).
 
 ## Arquitectura por negocio
 
-Cada negocio tiene una identidad separada de las cuentas de su equipo. D’Curiel usa `d-curiel`; Tere y Marco conservarán accesos individuales. Una solicitud se dirige a **un negocio**, no a todos los mudanceros. La cuarta migración prepara aislamiento, membresías, cupos y asignaciones acotadas; no crea cuentas de Auth ni activa servicios por sí sola.
+Cada negocio tiene una identidad separada de las cuentas de su equipo. D’Curiel usa `d-curiel`; cada integrante tendrá su acceso individual. Una solicitud se dirige a **un negocio**, no a todos los mudanceros. La cuarta migración prepara aislamiento, membresías, cupos y asignaciones acotadas; no crea cuentas de Auth ni activa servicios por sí sola.
 
 El panel consulta 20 resúmenes por página y carga la ficha completa al seleccionarla. La navegación usa un cursor; no hay una consulta automática cada minuto por cada usuario. Las notificaciones se conservan en la base y los avisos al dispositivo siguen siendo opcionales. El uso masivo necesita pruebas de carga y presupuesto: no se garantiza una operación gratuita con millones de usuarios.
 
@@ -33,7 +35,7 @@ Consulta la [arquitectura, flujo de datos y costos](docs/arquitectura-y-costos.m
 
 El servidor debe aplicar los permisos. Mostrar u ocultar botones no protege una solicitud. Nadie puede concederse un rol administrativo desde el registro público.
 
-Los asesores del piloto son **Tere Curiel (55 2906 1098)** y **Marco Curiel (56 1449 2452)**. Tere recibe los mensajes enviados desde los botones públicos y la ficha; Marco se conserva como integrante del equipo para la siguiente etapa. La recepción dentro de cuentas, cuando se active, asigna la solicitud a los miembros aprobados del equipo familiar. Proveedores y administradores requieren un segundo factor para consultar información de clientes. Esta entrega no modifica sus cuentas de WhatsApp ni vincula dispositivos.
+Los contactos públicos representan a la empresa. La línea principal recibe los mensajes enviados desde los botones públicos y la ficha. La recepción dentro de cuentas, cuando se active, asigna la solicitud a los miembros aprobados del negocio. Proveedores y administradores requieren un segundo factor para consultar información de clientes. Esta entrega no modifica sus cuentas de WhatsApp ni vincula dispositivos.
 
 ## Desarrollo local en VS Code
 
@@ -69,9 +71,9 @@ Consulta los requisitos de las pruebas de permisos en [lanzamiento](docs/lanzami
 
 Incluye ruta local o foránea, modalidad directa o compartida, domicilios y fecha, inmuebles y accesos, acarreos, habitaciones, muebles con variantes, artículos especiales, empaque y maniobras, además de datos y preferencias de contacto.
 
-Los volúmenes y pesos del catálogo describen la carga. Son estimaciones que revisa la empresa, no una tarifa. La ficha no confirma reserva, seguro ni contrato.
+La solicitud no calcula peso ni volumen: la empresa evalúa la carga, el personal y el almacenaje durante la conversación. La vista inicial muestra todos los muebles; sillones individuales, sillas comunes y sillas de escritorio tienen cantidades propias. La ficha no confirma reserva, seguro ni contrato.
 
-Los contactos se configuran en `src/config.js`. Los enlaces públicos de WhatsApp usan la línea principal de Tere y preparan la ficha o este mensaje general: «Hola, Mudanzas D’Curiel. Me interesa un servicio de mudanza. ¿Me pueden ayudar con disponibilidad y una propuesta?». El cliente aún debe enviarlo. No se enviaron mensajes de prueba a los asesores.
+Los contactos se configuran en `src/config.js`. Los enlaces públicos de WhatsApp usan la línea principal de la empresa y preparan la ficha o este mensaje general: «Hola, Mudanzas D’Curiel. Me interesa un servicio de mudanza. ¿Me pueden ayudar con disponibilidad y una propuesta?». El cliente aún debe enviarlo. No se enviaron mensajes de prueba a los asesores.
 
 Los avisos del panel y el canal Web Push están implementados, pero no activos en producción. Web Push requiere la función de servidor, sus claves, el disparador y el permiso de cada dispositivo; no es un envío automático de WhatsApp ni SMS. La [guía de WhatsApp del negocio](docs/whatsapp-negocio.md) explica las opciones para atender una misma cuenta desde ambos teléfonos o desarrollar avisos automáticos a dos números.
 

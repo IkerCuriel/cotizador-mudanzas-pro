@@ -1,0 +1,5 @@
+.inventory-selection-hint { margin: -2px 0 16px; line-height: 1.65; }
+.inventory-item__meta .inventory-group-count { color: var(--navy); font-weight: 700; }
+.inventory-item__meta .inventory-group-count[hidden] { display: none; }
+#itemCountLabel { color: var(--navy); font-weight: 600; }
+#clearInventory:disabled { opacity: .45; cursor: default; text-decoration: none; }

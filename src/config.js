@@ -1,17 +1,10 @@
-// Contactos de atención del piloto. Son asesores, no cuentas de acceso.
-// Cada mensaje se envía únicamente cuando el cliente lo confirma en WhatsApp.
-export const ADVISORS = Object.freeze([
-  Object.freeze({ id: "tere", name: "Tere Curiel", initials: "TC", whatsapp: "525529061098", displayPhone: "55 2906 1098" }),
-  Object.freeze({ id: "marco", name: "Marco Curiel", initials: "MC", whatsapp: "525614492452", displayPhone: "56 1449 2452" }),
-]);
-
-// Una sola atención comercial: Tere recibe el contacto inicial de D’Curiel.
-export const BUSINESS = {
+// Contacto público de la empresa. Las identidades del equipo no se publican.
+export const BUSINESS = Object.freeze({
   slug: "d-curiel",
   name: import.meta.env?.VITE_BUSINESS_NAME || "Mudanzas D’Curiel",
-  whatsapp: ADVISORS[0].whatsapp,
-  displayPhone: ADVISORS[0].displayPhone,
-};
+  whatsapp: "525529061098",
+  displayPhone: "55 2906 1098",
+});
 
 export const BUSINESS_GREETING = `Hola, ${BUSINESS.name}. Me interesa un servicio de mudanza. ¿Me pueden ayudar con disponibilidad y una propuesta?`;
 
@@ -22,16 +15,6 @@ export function buildBusinessWhatsAppUrl(requestText = "") {
     ? `Hola, ${BUSINESS.name}. Preparé mi solicitud en MoveFlow y me gustaría recibir una propuesta para mi mudanza.\n\n${details}`
     : BUSINESS_GREETING;
   return buildWhatsAppUrl(message);
-}
-
-export function getAdvisor(id) {
-  const advisor = ADVISORS.find((entry) => entry.id === id);
-  if (!advisor) throw new Error("Elige a Tere o Marco para compartir tu solicitud.");
-  return advisor;
-}
-
-export function buildAdvisorWhatsAppUrl(message, advisorId) {
-  return buildWhatsAppUrl(message, getAdvisor(advisorId).whatsapp);
 }
 
 export function buildWhatsAppUrl(message, phone = BUSINESS.whatsapp) {

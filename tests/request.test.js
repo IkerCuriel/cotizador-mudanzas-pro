@@ -31,16 +31,41 @@ test("catalog covers the requested rooms, properties, access and furniture varia
   assert.equal(Object.keys(PROPERTY_TYPES).length, 8);
   assert.equal(Object.keys(ACCESS_TYPES).length, 4);
   assert.equal(Object.keys(CARRY_RANGES).length, 5);
-  assert.equal(FURNITURE.length, 18);
+  assert.equal(FURNITURE.length, 20);
   assert.equal(ITEMS.length, 50);
   assert.equal(new Set(ITEMS.map((item) => item.id)).size, ITEMS.length);
   for (const item of ITEMS) {
-    assert.ok(item.volume > 0 && item.weightKg > 0 && item.name && item.icon);
+    assert.ok(item.name && item.icon);
+    assert.equal(Object.hasOwn(item, "volume"), false);
+    assert.equal(Object.hasOwn(item, "weightKg"), false);
     assert.ok(item.roomIds.every((id) => ROOMS.some((room) => room.id === id)));
   }
   for (const id of ["bed-single", "bed-double", "bed-queen", "bed-king", "refrigerator-mini", "refrigerator-duplex", "refrigerator-french-door", "piano-upright", "safe-large", "shed-modular", "bar-standard"]) {
     assert.ok(ITEMS.some((item) => item.id === id), id);
   }
+});
+
+test("chairs have one general counter and an office counter; armchairs are discoverable separately", () => {
+  const chairs = FURNITURE.find((group) => group.id === "chairs");
+  const office = FURNITURE.find((group) => group.id === "officeChairs");
+  assert.deepEqual(chairs.variants.map((item) => item.id), ["chair-dining"]);
+  assert.equal(chairs.variants[0].name, "Sillas");
+  assert.deepEqual(office.variants.map((item) => item.id), ["chair-office"]);
+  assert.ok(office.variants[0].name.includes("escritorio"));
+  assert.deepEqual(FURNITURE.find((group) => group.id === "armchairs").variants.map((item) => item.id), ["armchair-single", "armchair-recliner"]);
+  assert.equal(FURNITURE.flatMap((group) => group.variants).some((item) => item.id === "chair-folding"), false);
+});
+
+test("historical chair IDs preserve all quantities through import, text export and re-save", () => {
+  const historic = { ...request(), inventory: { "chair-dining": 99, "chair-folding": 99, "chair-office": 3, "armchair-single": 1 } };
+  const restored = restoreRequest(historic);
+  for (const [id, count] of Object.entries(historic.inventory)) assert.equal(restored.inventory[id], count);
+  assert.equal(restored.totals.totalItems, 202);
+  const exported = buildRequestText(restored);
+  assert.match(exported, /99 × Sillas/);
+  assert.match(exported, /99 × Silla plegable/);
+  assert.match(exported, /3 × Silla de escritorio/);
+  assert.deepEqual(importRequest(JSON.stringify(restored), memoryStorage()).inventory, restored.inventory);
 });
 
 test("otro inmueble de origen conserva su descripción en borrador, ficha y archivo importado", () => {
@@ -90,7 +115,8 @@ test("normalization allows known fields only and bounds counts without inherited
   });
   assert.equal(normalized.fields.customerName, "Ana");
   assert.equal(normalized.fields.originFloor, 50);
-  assert.equal(normalized.fields.extraLoaders, 20);
+  assert.equal(Object.hasOwn(normalized.fields, "extraLoaders"), false);
+  assert.equal(Object.hasOwn(normalized.fields, "storageDays"), false);
   assert.equal(normalized.rooms.bedroom, 20);
   assert.equal(normalized.inventory["bed-king"], 99);
   assert.equal(normalized.inventory["boxes-medium"], 2);
@@ -168,7 +194,7 @@ test("invalid calendar dates are cleared and flexible dates may remain unconfirm
 test("inventory totals count variants once regardless of number of furnished rooms", () => {
   const inventory = { "bed-queen": 2, "boxes-medium": 10, "piano-upright": 1 };
   const totals = getInventoryTotals({ bedroom: 8, living: 2 }, inventory);
-  assert.deepEqual(totals, { totalItems: 13, totalRooms: 10, totalVolume: 5.6, totalWeight: 480, specialItems: 1 });
+  assert.deepEqual(totals, { totalItems: 13, totalRooms: 10, specialItems: 1 });
   assert.deepEqual({ ...getInventoryTotals({ bedroom: 1 }, inventory), totalRooms: 10 }, totals);
 });
 
@@ -186,6 +212,8 @@ test("new requests contain descriptive totals and no automatic quote or imported
   assert.equal(Object.hasOwn(result, "total"), false);
   assert.equal(Object.hasOwn(result.fields, "price"), false);
   assert.equal(result.totals.totalItems, 14);
+  assert.deepEqual(Object.keys(result.totals).sort(), ["specialItems", "totalItems", "totalRooms"]);
+  assert.doesNotMatch(JSON.stringify(result), /totalVolume|totalWeight|weightKg|storageDays|extraLoaders/);
   assert.notEqual(createRequest(draft).id, createRequest(draft).id);
 });
 
@@ -193,9 +221,20 @@ test("text export includes details needed for human negotiation but never offers
   const base = request();
   const withOffer = addOffer(base, { company: "Empresa privada", amount: 98765, notes: "Nota interna secreta" });
   const result = buildRequestText(withOffer);
-  for (const content of ["MF-TEST-001", "Foráneo · Compartido", "2026-11-12", "Ciudad de México", "Calle Dos 34", "Residencial plus", "3 niveles con elevador y 2 por escaleras", "45 m", "Recámara: 2", "2 × Cama queen", "Refrigerador de puerta francesa", "MANEJO ESPECIAL", "Una escultura de cerámica", "El piano no cabe", "No se recogen artículos sueltos", "subida 1 pisos; bajada 5 pisos", "5 días", "5512345678", "cliente@example.com", "Llamada · Tarde", "Autorización para contacto sobre esta solicitud: Sí"]) assert.ok(result.includes(content), content);
+  for (const content of ["MF-TEST-001", "Foráneo · Compartido", "2026-11-12", "Ciudad de México", "Calle Dos 34", "Residencial plus", "3 niveles con elevador y 2 por escaleras", "45 m", "Recámara: 2", "2 × Cama queen", "Refrigerador de puerta francesa", "MANEJO ESPECIAL", "Una escultura de cerámica", "El piano no cabe", "No se recogen artículos sueltos", "subida 1 pisos; bajada 5 pisos", "5512345678", "cliente@example.com", "Llamada · Tarde", "Autorización para contacto sobre esta solicitud: Sí"]) assert.ok(result.includes(content), content);
   assert.equal(/98765|Empresa privada|Nota interna secreta|\$/.test(result), false);
+  assert.doesNotMatch(result, /Volumen|peso orientativo|m³|\bkg\b|Cargadores|Almacenaje:|5 días/);
   assert.equal(buildRequestText(base), result);
+});
+
+test("restoring older estimates strips operational decisions and preserves notes for the conversation", () => {
+  const old = { ...request(), fields: { ...request().fields, storageDays: 12, extraLoaders: 4, notes: "Quiero consultar disponibilidad de bodega" }, totals: { totalItems: 14, totalVolume: 6.55, totalWeight: 259 } };
+  const current = restoreRequest(old);
+  assert.equal(current.fields.notes, old.fields.notes);
+  assert.deepEqual(current.totals, { totalItems: 14, totalRooms: 4, specialItems: 1 });
+  assert.doesNotMatch(JSON.stringify(current), /totalVolume|totalWeight|storageDays|extraLoaders/);
+  assert.match(buildRequestText(current), /Quiero consultar disponibilidad de bodega/);
+  assert.doesNotMatch(buildRequestText(old), /6[.,]55|259|Cargadores|12 días/);
 });
 
 test("legacy drafts preserve furniture and usable access/services while requesting fresh contact consent", () => {

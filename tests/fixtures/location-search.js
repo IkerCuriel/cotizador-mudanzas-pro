@@ -1,4 +1,4 @@
-import { setupLocationMaps } from '../../src/maps.js';
+import { setupBusinessLocationMap, setupLocationMaps } from '../../src/maps.js';
 
 // Deliberately simulated provider for local browser QA. Never used by the production bundle.
 const samplePlaces = [
@@ -36,20 +36,24 @@ const places = {
   endSession(token) { sessions.delete(token); },
 };
 const controller = setupLocationMaps(document, { apiKey: '', places });
+const businessController = setupBusinessLocationMap(document, { apiKey: '', places });
 const form = document.getElementById('fixtureForm');
 function render() {
   controller.update();
+  businessController.update();
   document.getElementById('fixturePayload').textContent = JSON.stringify({
     origin: document.getElementById('origin').value,
     destination: document.getElementById('destination').value,
     ...controller.collect(),
+    businessLocation: document.getElementById('businessLocation').value,
+    ...businessController.collect(),
   }, null, 2);
 }
 form.addEventListener('input', render);
 form.addEventListener('change', render);
 form.addEventListener('submit', (event) => event.preventDefault());
 document.getElementById('fixtureReset').addEventListener('click', () => {
-  form.reset(); controller.reset(); render();
+  form.reset(); controller.reset(); businessController.reset(); render();
   status.textContent = 'Prueba reiniciada. Ninguna solicitud fue enviada.';
 });
 document.getElementById('fixtureRestore').addEventListener('click', () => {
