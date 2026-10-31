@@ -47,6 +47,7 @@ export default defineConfig(({ mode }) => {
     rollupOptions: {
       input: {
         solicitud: fileURLToPath(new URL("./index.html", import.meta.url)),
+        mudanceros: fileURLToPath(new URL("./mudanceros.html", import.meta.url)),
         negocio: fileURLToPath(new URL("./negocio.html", import.meta.url)),
         cuenta: fileURLToPath(new URL("./cuenta.html", import.meta.url)),
         panel: fileURLToPath(new URL("./panel.html", import.meta.url)),

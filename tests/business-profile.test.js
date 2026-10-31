@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getBusinessProfile, normalizeBusinessPhotos } from '../src/business-profile-data.js';
 
-test('the default public profile starts without invented company photographs', () => {
+test('the default public profile uses the two real company photographs provided by its owner', () => {
   const profile = getBusinessProfile();
   assert.equal(profile.slug, 'd-curiel');
-  assert.deepEqual(profile.photos, []);
+  assert.deepEqual(profile.photos.map(({src}) => src), ['/businesses/d-curiel/camion-d-curiel.jpeg', '/businesses/d-curiel/equipo-en-mudanza.jpeg']);
+  assert.ok(profile.photos.every(({width,height,alt}) => width > 0 && height > 0 && alt.length > 10));
   assert.equal(getBusinessProfile('__proto__'), null);
   assert.equal(getBusinessProfile('other-business'), null);
 });

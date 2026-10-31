@@ -9,7 +9,7 @@ import { getPushAvailability, getPushDeviceState, enablePushNotifications, disab
 
 const statusLabels = { submitted: 'Recibida', contacted: 'Contactado', negotiating: 'En conversación', completed: 'Finalizada', cancelled: 'Cancelada' };
 const roleLabels = { applicant: 'Cliente', provider: 'Asesor de mudanzas', admin: 'Administración', superadmin: 'Superadministración' };
-const providerLabels = { pending: 'Pendiente de revisión', approved: 'Aprobado', suspended: 'Suspendido', expired: 'Vigencia vencida' };
+const providerLabels = { pending: 'Pendiente de revisión', approved: 'Aprobado', suspended: 'Suspendido', inactive: 'Acceso por revisar' };
 const byId = (id) => document.getElementById(id);
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 const state = { session: null, profile: null, requests: [], notifications: [], providers: [], users: [], businesses: [], businessId: '', selectedId: null, detail: null, detailLoading: false, page: 0, cursors: [null], nextCursor: null, hasNext: false, loading: false, tab: 'requests' };
@@ -88,7 +88,7 @@ function clearPrivateData() {
   byId('dashboard-gate').innerHTML = '<div class="cloud-empty"><span class="cloud-loading" aria-hidden="true"></span><h1>Actualizando tu acceso…</h1></div>';
 }
 function effectiveProviderStatus(profile) {
-  return profile.provider_status === 'approved' && (!profile.plan_expires_at || new Date(profile.plan_expires_at).getTime() <= Date.now()) ? 'expired' : profile.provider_status;
+  return profile.provider_status === 'approved' && profile.provider_access_active !== true ? 'inactive' : profile.provider_status;
 }
 function renderPlan() {
   if (accessExpiryTimer) clearTimeout(accessExpiryTimer);
@@ -98,10 +98,10 @@ function renderPlan() {
   const status = effectiveProviderStatus(profile);
   if (status === 'approved' && profile.plan_expires_at) {
     const remaining = new Date(profile.plan_expires_at).getTime() - Date.now();
-    accessExpiryTimer = setTimeout(() => { clearPrivateData(); refresh(); }, Math.min(Math.max(remaining + 1000, 1000), 2147483647));
+    if (remaining > 0) accessExpiryTimer = setTimeout(() => { clearPrivateData(); refresh(); }, Math.min(remaining + 1000, 2147483647));
   }
-  const explanation = status === 'approved' ? `Tu acceso al piloto está vigente hasta el ${formatDate(profile.plan_expires_at)}. Aquí aparecen las solicitudes que se te asignen.` : status === 'pending' ? 'Tu negocio está pendiente de revisión. Aún no puede recibir ni consultar datos de clientes.' : status === 'expired' ? 'Tu vigencia terminó. Solicita una revisión para volver a recibir oportunidades.' : 'El acceso a las solicitudes está suspendido. Contacta al equipo para revisar tu caso.';
-  byId('provider-plan').innerHTML = `<section class="dashboard-plan"><div><p class="cloud-eyebrow">Plan piloto · sin costo</p><h2>${esc(providerLabels[status] || 'Acceso por revisar')}</h2><p>${esc(explanation)} No hay renovación ni cobros automáticos.</p></div><a class="button button--secondary" href="${esc(buildWhatsAppUrl(`Hola, quisiera revisar el acceso al piloto de mi negocio ${profile.company_name || profile.display_name}.`))}" target="_blank" rel="noopener noreferrer">Consultar mi acceso</a></section>`;
+  const explanation = status === 'approved' ? 'Tu acceso está habilitado. Aquí aparecen las solicitudes que se te asignen.' : status === 'pending' ? 'Tu negocio está pendiente de revisión. Aún no puede recibir ni consultar datos de clientes.' : status === 'inactive' ? 'No pudimos confirmar un acceso activo. Revisa tu cuenta o solicita una revisión para recibir oportunidades.' : 'El acceso a las solicitudes está suspendido. Contacta al equipo para revisar tu caso.';
+  byId('provider-plan').innerHTML = `<section class="dashboard-plan"><div><p class="cloud-eyebrow">Acceso del negocio</p><h2>${esc(status === 'approved' ? 'Acceso habilitado' : providerLabels[status] || 'Acceso por revisar')}</h2><p>${esc(explanation)}</p></div><a class="button button--secondary" href="./mudanceros.html">Consultar mi acceso</a></section>`;
 }
 function renderRequestList() {
   byId('request-page-label').textContent = `Página ${state.page + 1}`;
@@ -110,7 +110,7 @@ function renderRequestList() {
   byId('requests-next').disabled = !state.hasNext || state.loading;
   byId('cloud-request-list').innerHTML = state.requests.length ? state.requests.map((request) => {
     return `<button type="button" class="dashboard-request${request.id === state.selectedId ? ' is-selected' : ''}" data-cloud-request="${esc(request.id)}" aria-pressed="${request.id === state.selectedId}"><span class="dashboard-status dashboard-status--${esc(request.status)}">${esc(statusLabels[request.status] || 'Recibida')}</span><strong>${esc(request.customer_name || request.reference)}</strong><p>${esc(request.origin)} → ${esc(request.destination)}</p><small>Mudanza: ${esc(formatDate(request.move_date))} · ${esc(request.reference)}</small></button>`;
-  }).join('') : `<div class="dashboard-empty-small"><strong>${state.profile.role === 'provider' ? 'Aún no tienes solicitudes disponibles.' : 'Aún no hay solicitudes aquí.'}</strong>${state.profile.role === 'provider' ? 'Revisa el estado y la vigencia de tu acceso. Las solicitudes aparecen cuando se te asignan.' : 'Las solicitudes enviadas desde tu cuenta aparecerán aquí para darles seguimiento.'}</div>`;
+  }).join('') : `<div class="dashboard-empty-small"><strong>${state.profile.role === 'provider' ? 'Aún no tienes solicitudes disponibles.' : 'Aún no hay solicitudes aquí.'}</strong>${state.profile.role === 'provider' ? 'Revisa el estado de tu acceso. Las solicitudes aparecen cuando se te asignan.' : 'Las solicitudes enviadas desde tu cuenta aparecerán aquí para darles seguimiento.'}</div>`;
 }
 function renderRequestDetail() {
   const request = getCurrentRequest();
@@ -149,7 +149,7 @@ function renderNotifications() {
 function renderBusinesses() {
   byId('business-tab').hidden = !requiresSecondFactor(state.profile);
   const statuses = { active: 'Activo', approved: 'Activo', pending: 'Pendiente', suspended: 'Suspendido', inactive: 'Inactivo' };
-  byId('cloud-businesses').innerHTML = state.businesses.length ? state.businesses.map((business) => `<article class="dashboard-surface"><p class="cloud-eyebrow">Mi negocio</p><h2>${esc(business.name)}</h2><p>${esc(statuses[business.status] || business.status)} · ${esc(business.member_role === 'owner' ? 'Responsable del negocio' : business.member_role === 'manager' ? 'Responsable del equipo' : business.member_role === 'operator' ? 'Administración' : 'Miembro del equipo')}</p><p class="cloud-small">Las solicitudes dirigidas a este negocio solo están disponibles para las personas autorizadas y asignadas. Tu cuenta es individual.</p><dl class="dashboard-business-meta"><div><dt>Identificador del negocio</dt><dd>${esc(business.slug)}</dd></div><div><dt>Plan</dt><dd>${esc(business.plan_code === 'pilot' ? 'Piloto · sin cobros automáticos' : business.plan_code)}</dd></div><div><dt>Límite mensual de solicitudes</dt><dd>${esc(business.monthly_request_limit ?? 'Por configurar')}</dd></div></dl></article>`).join('') : '<div class="dashboard-empty-small"><strong>Tu cuenta aún no está vinculada a un negocio disponible.</strong>La administración debe aprobar tu acceso y asignarte al equipo. Cambiar el nombre del perfil no concede acceso a solicitudes.</div>';
+  byId('cloud-businesses').innerHTML = state.businesses.length ? state.businesses.map((business) => `<article class="dashboard-surface"><p class="cloud-eyebrow">Mi negocio</p><h2>${esc(business.name)}</h2><p>${esc(statuses[business.status] || business.status)} · ${esc(business.member_role === 'owner' ? 'Responsable del negocio' : business.member_role === 'manager' ? 'Responsable del equipo' : business.member_role === 'operator' ? 'Administración' : 'Miembro del equipo')}</p><p class="cloud-small">Las solicitudes dirigidas a este negocio solo están disponibles para las personas autorizadas y asignadas. Tu cuenta es individual.</p><dl class="dashboard-business-meta"><div><dt>Identificador del negocio</dt><dd>${esc(business.slug)}</dd></div><div><dt>Límite mensual de solicitudes</dt><dd>${esc(business.monthly_request_limit ?? 'Por configurar')}</dd></div></dl></article>`).join('') : '<div class="dashboard-empty-small"><strong>Tu cuenta aún no está vinculada a un negocio disponible.</strong>La administración debe aprobar tu acceso y asignarte al equipo. Cambiar el nombre del perfil no concede acceso a solicitudes.</div>';
   const filter = byId('business-filter');
   byId('business-filter-field').hidden = state.businesses.length < 2;
   filter.innerHTML = (isAdmin() ? '<option value="">Todos los negocios autorizados</option>' : '') + state.businesses.map((business) => `<option value="${esc(business.id)}">${esc(business.name)}</option>`).join('');
@@ -159,13 +159,14 @@ function renderProfile() {
   const form = byId('profile-form');
   for (const field of ['display_name', 'phone', 'company_name']) form.elements[field].value = state.profile[field] || '';
   byId('profile-email').value = state.session.user.email || '';
-  byId('profile-side').innerHTML = `<p class="cloud-eyebrow">Tu tipo de cuenta</p><h2>${esc(roleLabels[state.profile.role])}</h2><p>El acceso a solicitudes y funciones depende de los permisos de tu cuenta.</p>${state.profile.role === 'applicant' ? '<hr /><h2>¿Tienes un negocio de mudanzas?</h2><p>Solicita acceso al piloto sin costo. El equipo revisará tu negocio antes de asignarte solicitudes.</p><form id="join-provider-form" class="cloud-form"><label>Nombre del negocio<input name="company_name" required minlength="2" maxlength="120" autocomplete="organization" /></label><button type="submit" class="button button--secondary">Solicitar acceso al piloto</button></form>' : '<p class="cloud-small">La administración revisa los accesos. Los permisos no se cambian editando el perfil.</p>'}`;
+  byId('profile-side').innerHTML = `<p class="cloud-eyebrow">Tu tipo de cuenta</p><h2>${esc(roleLabels[state.profile.role])}</h2><p>El acceso a solicitudes y funciones depende de los permisos de tu cuenta.</p>${state.profile.role === 'applicant' ? '<hr /><h2>¿Tienes un negocio de mudanzas?</h2><p>Conoce el plan mensual y solicita la creación de un perfil para tu empresa.</p><a class="button button--secondary" href="./mudanceros.html">Conocer el plan para mudanceros</a>' : '<p class="cloud-small">La administración revisa los accesos. Los permisos no se cambian editando el perfil.</p>'}`;
 }
 function renderProviders() {
   if (!isAdmin()) { byId('cloud-providers').innerHTML = ''; return; }
   byId('cloud-providers').innerHTML = state.providers.length ? state.providers.map((profile) => {
-    const status = effectiveProviderStatus(profile);
-    return `<article class="dashboard-provider"><header><div><h3>${esc(profile.company_name || profile.display_name || 'Negocio sin nombre')}</h3><p>${esc(profile.display_name)}${profile.phone ? ` · ${esc(profile.phone)}` : ''}</p></div><span class="dashboard-status dashboard-status--${esc(status)}">${esc(providerLabels[status] || 'Por revisar')}</span></header><p class="cloud-small">Plan piloto · ${profile.plan_expires_at ? `vigencia al ${esc(formatDate(profile.plan_expires_at))}` : 'sin vigencia aprobada'}${profile.is_family ? ' · equipo D’Curiel' : ''}</p><form class="cloud-form" data-provider-form="${esc(profile.id)}"><label>Estado de acceso<select name="status">${['pending', 'approved', 'suspended'].map((option) => `<option value="${option}"${option === profile.provider_status ? ' selected' : ''}>${providerLabels[option]}</option>`).join('')}</select></label><label>Vigencia hasta<input type="date" name="expires" value="${esc(dateValue(profile.plan_expires_at))}" /><small>Para aprobar, elige una fecha futura dentro de los próximos 366 días.</small></label><label class="cloud-check"><input type="checkbox" name="is_family"${profile.is_family ? ' checked' : ''}${isSuperadmin() ? '' : ' disabled'} /><span>Pertenece al equipo de D’Curiel que recibe solicitudes directas${isSuperadmin() ? '' : ' (lo asigna superadministración)'}</span></label><button type="submit" class="button button--secondary">Guardar acceso</button></form></article>`;
+    // This list shows review status; another user's current entitlement is private.
+    const status = profile.provider_status;
+    return `<article class="dashboard-provider"><header><div><h3>${esc(profile.company_name || profile.display_name || 'Negocio sin nombre')}</h3><p>${esc(profile.display_name)}${profile.phone ? ` · ${esc(profile.phone)}` : ''}</p></div><span class="dashboard-status dashboard-status--${esc(status)}">Estado de revisión: ${esc(providerLabels[status] || 'Por revisar')}</span></header><p class="cloud-small">Vigencia registrada: ${profile.plan_expires_at ? esc(formatDate(profile.plan_expires_at)) : 'sin fecha'}${profile.is_family ? ' · equipo D’Curiel' : ''}</p><form class="cloud-form" data-provider-form="${esc(profile.id)}"><label>Estado de revisión<select name="status">${['pending', 'approved', 'suspended'].map((option) => `<option value="${option}"${option === profile.provider_status ? ' selected' : ''}>${providerLabels[option]}</option>`).join('')}</select></label><label>Vigencia hasta<input type="date" name="expires" value="${esc(dateValue(profile.plan_expires_at))}" /><small>Para aprobar, elige una fecha futura dentro de los próximos 366 días.</small></label><label class="cloud-check"><input type="checkbox" name="is_family"${profile.is_family ? ' checked' : ''}${isSuperadmin() ? '' : ' disabled'} /><span>Pertenece al equipo de D’Curiel que recibe solicitudes directas${isSuperadmin() ? '' : ' (lo asigna superadministración)'}</span></label><button type="submit" class="button button--secondary">Guardar acceso</button></form></article>`;
   }).join('') : '<div class="dashboard-empty-small"><strong>Aún no hay negocios registrados.</strong>Las solicitudes de acceso aparecerán aquí cuando se complete el registro.</div>';
 }
 function renderUsers() {
@@ -408,11 +409,6 @@ byId('profile-form').addEventListener('submit', (event) => {
     const { error } = await supabase.from('profiles').update(payload).eq('id', state.session.user.id).select('id').single();
     if (error) throw error;
   }, 'Tu perfil se actualizó. Las fichas ya enviadas conservan sus datos originales.');
-});
-byId('profile-side').addEventListener('submit', (event) => {
-  if (event.target.id !== 'join-provider-form') return;
-  event.preventDefault();
-  if (event.target.reportValidity()) mutate(event.target, () => rpc('join_provider', { p_company_name: event.target.elements.company_name.value.trim() }), 'Solicitud de acceso registrada. El equipo revisará tu negocio.');
 });
 byId('cloud-providers').addEventListener('submit', (event) => {
   const form = event.target.closest('[data-provider-form]');

@@ -25,7 +25,7 @@ if (profile) {
     gallery.replaceChildren(...profile.photos.map((photo) => {
       const figure = document.createElement('figure');
       const image = document.createElement('img');
-      image.src = photo.src; image.alt = photo.alt; image.loading = 'lazy'; image.decoding = 'async'; image.width = 800; image.height = 600;
+      image.src = photo.src; image.alt = photo.alt; image.loading = 'lazy'; image.decoding = 'async'; if (photo.width && photo.height) { image.width = photo.width; image.height = photo.height; }
       image.addEventListener('error', () => {
         const unavailable = document.createElement('p'); unavailable.className = 'profile-photo-unavailable'; unavailable.textContent = 'Fotografía no disponible por el momento.';
         image.replaceWith(unavailable);

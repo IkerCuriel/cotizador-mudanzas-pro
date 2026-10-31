@@ -56,7 +56,19 @@ export async function getProfile(session) {
   if (!activeSession) return null;
   const { data, error } = await requireCloud().from('profiles').select('*').eq('id', activeSession.user.id).single();
   if (error) throw error;
-  return data;
+  return resolveProviderAccess(data, requireCloud());
+}
+
+/** UI access is confirmed by the current user's RPC, never inferred from dates or metadata. */
+export async function resolveProviderAccess(profile, client) {
+  let active = false;
+  if (profile?.role === 'provider' && profile.provider_status === 'approved') {
+    try {
+      const { data, error } = await client.rpc('get_my_access_status');
+      active = !error && data?.access_version === 1 && data.provider_access_active === true;
+    } catch { /* Missing migration, session failure or connection error: fail closed. */ }
+  }
+  return { ...profile, provider_access_active: active };
 }
 
 export async function getPublicSettings() {

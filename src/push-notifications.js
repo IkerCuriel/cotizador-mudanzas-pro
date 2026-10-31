@@ -7,9 +7,9 @@ export function readPushConfig(env = {}) {
 }
 const config = readPushConfig({ VITE_WEB_PUSH_ENABLED: import.meta.env?.VITE_WEB_PUSH_ENABLED, VITE_WEB_PUSH_PUBLIC_KEY: import.meta.env?.VITE_WEB_PUSH_PUBLIC_KEY });
 
-export function mayEnablePush(profile, assuranceLevel, now = Date.now()) {
+export function mayEnablePush(profile, assuranceLevel) {
   if (assuranceLevel !== 'aal2' || !profile?.id) return false;
-  return ['admin', 'superadmin'].includes(profile.role) || (profile.role === 'provider' && profile.provider_status === 'approved' && new Date(profile.plan_expires_at).getTime() > now);
+  return ['admin', 'superadmin'].includes(profile.role) || (profile.role === 'provider' && profile.provider_status === 'approved' && profile.provider_access_active === true);
 }
 export function getPushAvailability({ profile, assuranceLevel } = {}) {
   const configured = isCloudConfigured && config.configured;

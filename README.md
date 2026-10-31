@@ -12,7 +12,7 @@ El piloto público se aloja en [MoveFlow Mudanzas](https://moveflow-mudanzas.ren
 
 **La base de datos, las cuentas y las notificaciones aún no están activadas en una nube de producción.** La recepción compartida en el panel requiere configurar Supabase y sus permisos. Preparar una ficha por sí solo no la entrega al negocio. No está integrada la API de WhatsApp ni se envía una copia automática a Marco. El contacto manual por WhatsApp no necesita una cuenta de MoveFlow ni Supabase.
 
-El piloto no cobra suscripciones. La futura membresía será para los **mudanceros que reciben oportunidades**; quien solicita una mudanza tendrá una cuenta gratuita. No se garantizan contrataciones, ingresos ni un número de solicitudes.
+El apartado [para mudanceros](https://moveflow-mudanzas.render-inspace.chatgpt.site/mudanceros.html) anuncia el plan de **$149 MXN al mes** y permite preparar una solicitud de alta por correo a iker.san.cu@gmail.com. El solicitante confirma el envío en su propia aplicación de correo; la página no confirma recepción ni crea una cuenta. **Los cobros siguen desactivados** hasta conectar y verificar PayPal Business y la base de datos. Quien solicita una mudanza no paga esta membresía. No se garantizan contrataciones, ingresos ni un número de solicitudes.
 
 ## Arquitectura por negocio
 
@@ -114,3 +114,9 @@ No abrir registros públicos hasta configurar el correo de autenticación, compl
 - [Perfil de empresa y fotografías reales](docs/perfiles-de-negocio.md).
 
 - [Envío, recuperación de la ficha y nueva solicitud](docs/envio-y-nueva-solicitud.md).
+
+## Altas de negocios y cobros
+
+- [Preparar la cuenta PayPal Business y activar pagos](docs/activar-paypal.md).
+- [Planes, accesos internos y cobros](docs/planes-y-cobros.md).
+- [Gestión de solicitudes de perfil por correo](docs/altas-por-correo.md).
