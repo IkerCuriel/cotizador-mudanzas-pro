@@ -33,13 +33,13 @@ La migración `202610300002_family_team_security.sql` exige `aal2` para el equip
 5. Configura la dirección pública real como Site URL y añade el retorno `https://TU-DOMINIO/cuenta.html` con los parámetros de invitación, confirmación y recuperación que utiliza la aplicación. Para desarrollo, añade únicamente los retornos locales necesarios. Comprueba los correos reales antes de lanzar campañas; el SMTP predeterminado de Supabase tiene restricciones y no es suficiente para el registro público general.
 6. Completa los datos del responsable y publica los avisos vigentes antes de abrir registro o enviar invitaciones. Una invitación no inventa consentimiento: su titular acepta el aviso al elegir su contraseña; la aceptación guarda fecha del servidor y versión del aviso.
 7. Registra y confirma tu cuenta de propietario. Ejecuta `supabase/bootstrap-owner.sql` sustituyendo su UUID de ejemplo por el UUID verificado de esa cuenta. Revisa la identidad antes de ejecutarlo; un correo escrito en el código no otorga propiedad. Configura tu autenticador al entrar.
-8. Invita a Tere y Marco con el procedimiento siguiente. Ellos confirman el correo, eligen contraseña, solicitan el acceso de negocio y configuran el autenticador.
-9. Entra como superusuario: **Panel → Negocios**. Aprueba por separado ambas cuentas, fija una vigencia y marca **Pertenece al equipo familiar** para las dos. Comprueba los nombres y teléfonos con cada persona. Agregar a Marco no desactiva a Tere.
+8. Invita únicamente a la persona cuyo correo real se haya confirmado con el procedimiento siguiente. Empieza con Tere; Marco queda pendiente hasta disponer de su correo real. Cada titular confirma el correo, elige contraseña, solicita el acceso de negocio y configura el autenticador.
+9. Entra como superusuario: **Panel → Negocios**. Aprueba la cuenta activada, fija una vigencia y marca **Pertenece al equipo familiar**. Comprueba el nombre y teléfono con la persona. Repite el proceso con Marco cuando tenga correo propio; no es necesario esperar a Marco para activar Tere y agregarlo después no desactiva a Tere.
 10. Abre recepción únicamente después de completar las pruebas del apartado final. Los avisos al teléfono tienen su configuración independiente; una notificación guardada en el panel no demuestra que se haya entregado al teléfono.
 
 ## Invitación sin contraseñas temporales
 
-`scripts/provision-pilot.mjs` solo se ejecuta en tu computadora. Sin `--send` muestra un plan y **no conecta ni manda correos**. Con `--send` usa la API administrativa de Supabase, envía enlaces de invitación y nunca asigna permisos ni aprueba negocios automáticamente.
+`scripts/provision-pilot.mjs` solo se ejecuta en tu computadora. Sin `--send`, o con `--dry-run`, muestra un plan y **no conecta, valida la conexión ni manda correos**. Para enviar exige además `--member tere` o `--member marco`: cada ejecución invita a una sola persona, nunca a ambas. Usa la API administrativa de Supabase y nunca asigna permisos ni aprueba negocios automáticamente.
 
 Crea un archivo local **`.env.invites.local`** en la raíz del proyecto. Está excluido de Git por `.gitignore`. Completa estos valores directamente en tu editor; no pegues claves en chat, capturas, incidencias o comandos que queden en el historial:
 
@@ -48,22 +48,28 @@ SUPABASE_URL=https://TU-PROYECTO.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=
 MOVEFLOW_SITE_URL=https://TU-DOMINIO
 MOVEFLOW_TERE_EMAIL=
+MOVEFLOW_TERE_EMAIL_CONFIRMED=false
 MOVEFLOW_MARCO_EMAIL=
+MOVEFLOW_MARCO_EMAIL_CONFIRMED=false
 MOVEFLOW_PRIVACY_READY=false
-MOVEFLOW_EMAILS_CONFIRMED=false
 ```
 
-La clave es una clave secreta de servidor `sb_secret_…` o una `service_role` legada. No es la clave pública del navegador. Los correos provisionales proporcionados por el propietario se conservan solo en `.env.invites.local`, excluido de Git y con permisos privados. No son cuentas creadas, credenciales verificadas ni direcciones autorizadas para enviar correo. Sustitúyelos por direcciones que controle cada titular y marca `MOVEFLOW_EMAILS_CONFIRMED=true` solo después de comprobarlo. El script bloquea el envío mientras esta confirmación falte. Usa dos correos distintos y activa `MOVEFLOW_PRIVACY_READY=true` solamente cuando el aviso esté completo y publicado. El retorno `/cuenta.html?mode=invite` debe estar permitido en Supabase. No se modifica la configuración pública al cambiar este archivo.
+La clave es una clave secreta de servidor `sb_secret_…` o una `service_role` legada. No es la clave pública del navegador. Los correos provisionales proporcionados por el propietario se conservan solo en `.env.invites.local`, excluido de Git y con permisos privados. No son cuentas creadas, credenciales verificadas ni direcciones autorizadas para enviar correo. Para Tere, completa su correo real en `MOVEFLOW_TERE_EMAIL` y marca `MOVEFLOW_TERE_EMAIL_CONFIRMED=true` solo después de comprobar que lo controla. Mantén `MOVEFLOW_MARCO_EMAIL_CONFIRMED=false` mientras Marco no tenga correo real; puedes dejar vacío su correo. El envío a Tere no exige configurar ni confirmar el de Marco. Cuando corresponda, usa un correo distinto y confirma a Marco por separado.
+
+**Cambio desde la versión anterior:** `MOVEFLOW_EMAILS_CONFIRMED` ya no autoriza envíos; elimínala del archivo privado y añade las dos confirmaciones individuales. El formato del correo no demuestra que sea real ni reemplaza esta comprobación. `--send` sin `--member` se rechaza antes de conectar. Activa `MOVEFLOW_PRIVACY_READY=true` solamente cuando el aviso esté completo y publicado. El retorno `/cuenta.html?mode=invite` debe estar permitido en Supabase. No se modifica la configuración pública al cambiar este archivo.
 
 En la terminal del proyecto:
 
 ```sh
 chmod 600 .env.invites.local
 node scripts/provision-pilot.mjs
-node --env-file=.env.invites.local scripts/provision-pilot.mjs --send
+node scripts/provision-pilot.mjs --member tere --dry-run
+node --env-file=.env.invites.local scripts/provision-pilot.mjs --member tere --send
 ```
 
-Revisa los resultados por persona. Si una cuenta ya existe, la invitación no la sobrescribe: utiliza **Olvidé mi contraseña**. Si hubo envío parcial, revisa Auth antes de reintentar. El script no imprime claves, contraseñas, enlaces de acceso ni respuestas privadas del proveedor. El archivo secreto debe permanecer local y fuera de respaldos sin cifrar.
+El último comando envía realmente la invitación; ejecútalo solo después de completar los pasos anteriores. Para Marco, repite después con `--member marco --send` y su confirmación individual. Revisa Auth antes de reintentar un envío. Si una cuenta ya existe, la invitación no la sobrescribe: utiliza **Olvidé mi contraseña**. El script no imprime claves, contraseñas, enlaces de acceso ni respuestas privadas del proveedor. El archivo secreto debe permanecer local y fuera de respaldos sin cifrar.
+
+Antes de probar cuentas reales, faltan la conexión al proyecto remoto, las migraciones, SMTP y redirecciones, los datos completos del responsable y la publicación con `VITE_SUPABASE_URL`, clave pública `VITE_SUPABASE_ANON_KEY` y configuración legal. Las variables `VITE_` son públicas: nunca contienen la clave administrativa. Cambiarlas requiere volver a compilar y publicar. `supabase/config.toml` configura las pruebas locales, no el proyecto remoto; mantén allí el registro público cerrado durante la preparación. La invitación individual no abre la recepción de solicitudes ni activa avisos al teléfono.
 
 ## Recuperación de acceso
 
