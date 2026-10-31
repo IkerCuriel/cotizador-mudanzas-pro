@@ -64,7 +64,7 @@
               <button class="stepper__item" type="button" data-go-step="3"><span>3</span><small>Servicios</small></button><span class="stepper__line" aria-hidden="true"></span>
               <button class="stepper__item" type="button" data-go-step="4"><span>4</span><small>Contacto</small></button>
             </nav>
-            <form id="movingQuoteForm" novalidate>
+            <form id="movingQuoteForm" autocomplete="off" novalidate>
               <section class="form-step is-active" data-step="1" aria-labelledby="step-1-title">
                 <div class="section-heading"><span>Paso 1 de 4</span><h3 id="step-1-title">¿De dónde sales y a dónde vas?</h3><p>Empieza con colonia, ciudad y fecha. Puedes confirmar la dirección exacta directamente con tu asesor. Los campos con * son obligatorios.</p></div>
                 <div class="form-grid">
@@ -153,9 +153,9 @@
               <section class="form-step" data-step="4" aria-labelledby="step-4-title">
                 <div class="section-heading"><span>Paso 4 de 4</span><h3 id="step-4-title">El siguiente paso es conversar.</h3><p>Revisa tus datos y elige cómo compartir tu solicitud. El precio y las condiciones se acuerdan con una persona.</p><div class="account-invite"><strong>Tu mudanza, también en tu cuenta.</strong><p id="requestAccountStatus">Estamos comprobando la disponibilidad del registro.</p><a id="requestAccountLink" href="./cuenta.html">Entrar o crear mi cuenta</a></div></div>
                 <div class="form-grid">
-                  <label class="field field--full"><span>Nombre *</span><input id="customerName" name="customerName" maxlength="100" type="text" autocomplete="name" placeholder="¿Cómo te llamas?" required /><small class="field-error" data-error-for="customerName"></small></label>
-                  <label class="field"><span>Teléfono *</span><input id="phone" name="phone" maxlength="40" type="tel" autocomplete="tel" placeholder="10 dígitos o con código de país" required /><small class="field-error" data-error-for="phone"></small></label>
-                  <label class="field"><span>Correo electrónico <em>Opcional</em></span><input id="email" name="email" maxlength="254" type="email" autocomplete="email" placeholder="nombre@correo.com" /><small class="field-error" data-error-for="email"></small></label>
+                  <label class="field field--full"><span>Nombre *</span><input id="customerName" name="customerName" maxlength="100" type="text" autocomplete="off" placeholder="¿Cómo te llamas?" required /><small class="field-error" data-error-for="customerName"></small></label>
+                  <label class="field"><span>Teléfono *</span><input id="phone" name="phone" maxlength="40" type="tel" autocomplete="off" placeholder="10 dígitos o con código de país" required /><small class="field-error" data-error-for="phone"></small></label>
+                  <label class="field"><span>Correo electrónico <em>Opcional</em></span><input id="email" name="email" maxlength="254" type="email" autocomplete="off" placeholder="nombre@correo.com" /><small class="field-error" data-error-for="email"></small></label>
                   <label class="field"><span>Prefiero que me contacten por</span><select id="contactMethod" name="contactMethod"><option value="whatsapp">WhatsApp</option><option value="call">Llamada telefónica</option><option value="either">Llamada o WhatsApp</option></select></label>
                   <label class="field"><span>Mejor horario para contactarme</span><select id="contactWindow" name="contactWindow"><option value="anytime">Cualquier horario</option><option value="morning">Por la mañana</option><option value="afternoon">Por la tarde</option><option value="evening">Por la noche</option></select></label>
                 </div>

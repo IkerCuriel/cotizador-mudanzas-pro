@@ -4,10 +4,10 @@ El formulario mantiene un origen, un primer destino y hasta cinco destinos adici
 
 ## Estado publicado
 
-- Las direcciones pueden escribirse manualmente y revisarse en un mapa. No se cargan mapas al abrir la página ni al restaurar el borrador: la primera consulta ocurre al enfocar un campo o pulsar «Ver mapa».
+- Las direcciones pueden escribirse manualmente y revisarse en un mapa. Cada carga, recarga o regreso por la navegación del navegador empieza con ubicaciones vacías; no se restaura automáticamente un borrador anterior. No se cargan mapas al abrir la página: la primera consulta ocurre al enfocar un campo o pulsar «Ver mapa».
 - Editar la dirección elimina la referencia seleccionada anterior y el mapa viejo. Los textos se codifican; nunca se navega a una URL aportada por el cliente.
 - «Añadir destino» crea una parada posterior al primer destino. Puede cambiarse el orden de las paradas adicionales o quitarse una; el primer destino conserva su posición. Una parada añadida requiere dirección antes de continuar. Sus notas permiten precisar muebles, piso o acceso.
-- El orden y los detalles se conservan en borrador, resumen, WhatsApp, descarga, impresión y detalle del panel. No se guarda una solicitud en la nube por el simple hecho de completar el formulario.
+- El orden y los detalles se conservan en el borrador en memoria durante la visita actual, así como en la ficha preparada, resumen, WhatsApp, descarga, impresión y detalle del panel. Cambiar momentáneamente de aplicación o pestaña no borra ese borrador. Una ficha guardada se consulta solo por elección del cliente y no rellena automáticamente una nueva visita. No se guarda una solicitud en la nube por el simple hecho de completar el formulario.
 - El enlace «Abrir en Google Maps» sigue disponible si falla el mapa. Cambiar un punto dentro del iframe no modifica el formulario: solo una selección del desplegable integrado o la edición del campo pueden hacerlo.
 
 ## Autocompletado preparado, pendiente de activar

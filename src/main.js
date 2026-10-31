@@ -1,20 +1,19 @@
 import { ROOMS, FURNITURE, ITEMS, ACCESS_TYPES, CARRY_RANGES } from "./catalog.js";
-import { createRequest, normalizeDraft, migrateLegacyDraft, buildRequestText, propertyLabel, routeText } from "./request.js";
+import { createRequest, normalizeDraft, buildRequestText, propertyLabel, routeText } from "./request.js";
 import { saveRequest, loadRequests } from "./storage.js";
 import { buildBusinessWhatsAppUrl } from "./config.js";
 import { isCloudConfigured, getSession, getPublicSettings, submitBusinessRequest, accountUrl, cloudErrorMessage } from "./cloud.js";
 import { LEGAL_READY } from "./legal-config.js";
 import { setupLocationMaps } from "./maps.js";
-import { createSubmissionLifecycle, clearStoredDraft, ACTIVE_DRAFT_KEY, LEGACY_DRAFT_KEY } from "./submission-lifecycle.js";
+import { createSubmissionLifecycle, clearStoredDraft } from "./submission-lifecycle.js";
+import { setupFreshVisit } from "./fresh-visit.js";
 
-const DRAFT_KEY = ACTIVE_DRAFT_KEY;
-const LEGACY_KEY = LEGACY_DRAFT_KEY;
 const form = document.getElementById("movingQuoteForm");
 const modal = document.getElementById("quoteModal");
 const locationMaps = setupLocationMaps();
 const submissions = createSubmissionLifecycle();
 let receiptElement;
-const state = { step: 1, rooms: {}, inventory: {}, activeRoom: "all", variants: {}, request: null, prepared: null, draftWarning: "" };
+const state = { step: 1, rooms: {}, inventory: {}, activeRoom: "all", variants: {}, request: null, prepared: null };
 const emptyCounts = (items) => Object.fromEntries(items.map((item) => [item.id, 0]));
 const valueOf = (id) => document.getElementById(id)?.value ?? "";
 const checked = (id) => document.getElementById(id)?.checked === true;
@@ -209,38 +208,6 @@ function refresh() {
   const warningElement = document.getElementById("requestWarnings");
   warningElement.hidden = !warnings.length;
   warningElement.innerHTML = warnings.map((warning) => `<p>${escapeHtml(warning)}</p>`).join("");
-  persistDraft(draft);
-}
-function persistDraft(draft = collectDraft()) {
-  try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ version: 1, ...draft, prepared: state.prepared }));
-    text("draftFeedback", state.draftWarning || "Borrador guardado en este navegador.");
-  } catch { text("draftFeedback", "No se pudo guardar el borrador en este navegador. Puedes completar y descargar la ficha."); }
-}
-function restoreDraft() {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    const legacy = raw ? null : localStorage.getItem(LEGACY_KEY);
-    if (!raw && !legacy) return;
-    const source = JSON.parse(raw || legacy);
-    // A prior handoff retired this draft even if a quota error prevented rewriting it.
-    if (raw && submissions.retiredDraft(source.prepared?.id)) { clearStoredDraft(localStorage); return; }
-    const draft = raw ? normalizeDraft(source) : migrateLegacyDraft(source);
-    state.rooms = { ...emptyCounts(ROOMS), ...draft.rooms };
-    state.inventory = { ...emptyCounts(ITEMS), ...draft.inventory };
-    if (raw && source.prepared?.id && typeof source.prepared.fingerprint === "string") state.prepared = source.prepared;
-    Object.entries(draft.fields).forEach(([name, value]) => {
-      if (["privacyConsent", "packingAcknowledged"].includes(name)) return;
-      const field = form.elements.namedItem(name);
-      if (!field?.tagName) return;
-      if (field.type === "checkbox") field.checked = value === true;
-      else if (field.tagName === "SELECT") {
-        if ([...field.options].some((option) => option.value === String(value))) field.value = value;
-      } else field.value = value ?? "";
-    });
-    locationMaps.restore(draft.fields);
-    if (legacy) state.draftWarning = "Recuperamos los datos del cotizador anterior. Revisa las variantes de muebles y los accesos; ahora se prepara una solicitud sin precio automático.";
-  } catch { state.draftWarning = "No se pudo recuperar el borrador anterior. Puedes iniciar una nueva solicitud."; }
 }
 function setDefaultDate() {
   const dateString = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -308,12 +275,12 @@ function navigateTo(target) {
   }
   showStep(target);
 }
-function resetDraft() {
-  form.reset(); state.rooms = emptyCounts(ROOMS); state.inventory = emptyCounts(ITEMS); state.prepared = null; state.request = null; state.draftWarning = ""; state.activeRoom = "all"; state.variants = {};
+function resetDraft({ focus = true } = {}) {
+  form.reset(); state.rooms = emptyCounts(ROOMS); state.inventory = emptyCounts(ITEMS); state.prepared = null; state.request = null; state.activeRoom = "all"; state.variants = {};
   locationMaps.reset();
   document.querySelectorAll(".field-error").forEach((error) => { error.textContent = ""; });
   form.querySelectorAll("[aria-invalid]").forEach((field) => setError(field));
-  renderRooms(); renderInventory(); setDefaultDate(); showStep(1);
+  renderRooms(); renderInventory(); setDefaultDate(); showStep(1, focus);
 }
 function draftFingerprint(draft) {
   const normalized = normalizeDraft(draft);
@@ -334,7 +301,6 @@ function prepareRequest() {
   state.prepared = { id: request.id, fingerprint };
   try { saveRequest(request); }
   catch (error) { storageError = error.message; }
-  persistDraft(draft);
   openPreparedRequest(request, { storageError });
 }
 
@@ -366,7 +332,7 @@ function updateCloudControls() {
   const ready = isCloudConfigured && LEGAL_READY && cloudState.settings?.accepting_requests === true && cloudState.settings?.business_routing_version === 1 && cloudState.settings?.route_destinations_version === 1;
   const loggedIn = Boolean(cloudState.session);
   const authLink = document.getElementById("requestAccountLink");
-  authLink.href = loggedIn ? "./panel.html" : accountUrl("index.html#retomar");
+  authLink.href = loggedIn ? "./panel.html" : accountUrl("index.html#quote-title");
   authLink.textContent = loggedIn ? "Ver mi cuenta" : "Entrar o crear mi cuenta";
   text("requestAccountStatus", !ready ? "Estamos preparando las cuentas. Por ahora puedes compartir tu ficha con Mudanzas D’Curiel por WhatsApp; ese mensaje no se guarda en el panel." : loggedIn ? "Tu sesión está activa. Revisa la ficha y pulsa «Guardar y enviar a D’Curiel» para verla en tu cuenta y en el panel del negocio." : "La cuenta es opcional para WhatsApp. Crea una cuenta gratuita si también quieres guardar tu solicitud y consultar su seguimiento en el panel.");
   document.getElementById("networkConsentField").hidden = true;
@@ -434,7 +400,6 @@ function completeSubmission(request, channel) {
     if (otherDisplayedRequest) state.request = otherDisplayedRequest;
   } else {
     // An old request may finish after another draft has started. Never reset that draft.
-    if (result.detachPrepared) persistDraft();
     if (showingThisRequest) closeModal();
   }
   renderSubmissionReceipt();
@@ -445,7 +410,7 @@ function completeSubmission(request, channel) {
 async function sendCloudRequest() {
   if (!state.request || cloudState.sending || submissions.wasCloudSubmitted(state.request.id)) return;
   if (!isCloudConfigured || !LEGAL_READY || !cloudState.settings?.accepting_requests || cloudState.settings?.business_routing_version !== 1 || cloudState.settings?.route_destinations_version !== 1) return;
-  if (!cloudState.session) { window.location.href = accountUrl("index.html#retomar"); return; }
+  if (!cloudState.session) { window.location.href = accountUrl("index.html#quote-title"); return; }
   const submittedRequest = state.request; // Capture before awaiting: another draft may be opened meanwhile.
   cloudState.sending = true;
   updateCloudControls();
@@ -552,9 +517,12 @@ document.addEventListener("keydown", (event) => {
     else if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
   }
 });
-state.rooms = emptyCounts(ROOMS); state.inventory = emptyCounts(ITEMS);
 renderBusinessContact();
-restoreDraft(); setDefaultDate(); renderRooms(); renderInventory(); showStep(1, false); renderSubmissionReceipt();
+setupFreshVisit({ reset() {
+  closeModal({ restoreFocus: false });
+  resetDraft({ focus: false });
+  renderSubmissionReceipt();
+} });
+text("draftFeedback", "Tus datos se mantienen solo durante esta visita. Al volver a entrar o recargar, el formulario empieza vacío.");
 text("currentYear", String(new Date().getFullYear()));
-if (location.hash === "#retomar") showStep(4);
 loadCloudState();
